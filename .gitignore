@@ -1,0 +1,19 @@
+# Gradle
+.gradle/
+build/
+
+# Kotlin
+.kotlin/
+
+# IntelliJ
+*.iml
+.idea/caches/
+.idea/shelf/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/usage.statistics.xml
+
+# OS
+.DS_Store
+Thumbs.db

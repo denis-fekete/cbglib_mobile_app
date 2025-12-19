@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+        xmlns:android = "http://schemas.android.com/apk/res/android"
+        xmlns:app = "http://schemas.android.com/apk/res-auto"
+        xmlns:tools = "http://schemas.android.com/tools"
+        android:layout_width = "match_parent"
+        android:layout_height = "64dp"
+        tools:context = ".fragments.NavigationPanelFragment"
+        android:weightSum = "4">
+
+    <ImageButton
+            android:id = "@+id/btnNavCamera"
+            android:layout_width = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:contentDescription = "Camera Icon"
+            android:src = "@drawable/camera"
+            android:layout_weight = "1"
+            android:background = "@null"
+            app:tint = "@color/navigation_icon_tint"
+            />
+
+
+    <ImageButton
+            android:id = "@+id/btnNavSettings"
+            android:layout_width = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:contentDescription = "Settings Icon"
+            android:src = "@drawable/settings"
+            android:layout_weight = "1"
+            android:background = "@null"
+            app:tint = "@color/navigation_icon_tint"
+            />
+
+    <ImageButton
+            android:id = "@+id/btnNavStatusLog"
+            android:layout_width = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:contentDescription = "Debug log Icon"
+            android:src = "@drawable/frame_bug"
+            android:layout_weight = "1"
+            android:background = "@null"
+            app:tint = "@color/navigation_icon_tint"
+            />
+
+</LinearLayout>

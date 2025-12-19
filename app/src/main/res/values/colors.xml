@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name = "black">#FF000000</color>
+    <color name = "white">#FFFFFFFF</color>
+    <color name = "navigation_icon_selected">#00FF00</color>
+    <color name = "navigation_icon_default">#AAAAAA</color>
+    <color name = "detection_box">#00FF00</color>
+    <color name = "detection_text">#FFFFFF</color>
+    <color name = "detection_text_background">#0000AA</color>
+</resources>
