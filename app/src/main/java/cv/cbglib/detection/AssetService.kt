@@ -8,7 +8,8 @@ import android.util.Log
  */
 class AssetService(private val app: Application) {
     companion object {
-        const val MODEL_PATH = "yolo_v8_aug.onnx"
+        //        const val MODEL_PATH = "yolo_v8_aug.onnx"
+        const val MODEL_PATH = "yolo_v8.onnx"
         const val LABELS_PATH = "labels.txt"
     }
 

@@ -37,6 +37,9 @@ class CameraFragment :
         cameraxView = view.findViewById<PreviewView>(R.id.cameraxView)
         overlayView = view.findViewById<OverlayView>(R.id.overlayView)
 
+        // fill view, crop excess
+        cameraxView.scaleType = PreviewView.ScaleType.FILL_CENTER
+
         cameraController = CameraController(
             requireContext(),
             this as LifecycleOwner,

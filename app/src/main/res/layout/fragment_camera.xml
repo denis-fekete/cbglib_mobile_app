@@ -7,25 +7,11 @@
         xmlns:app = "http://schemas.android.com/apk/res-auto"
         tools:context = ".fragments.CameraFragment">
 
-    <TextView
-            android:layout_width = "match_parent"
-            android:layout_height = "0dp"
-            android:text = "Camera Fragment"
-            android:textSize = "30dp"
-            android:layout_marginTop = "30dp"
-            android:textAlignment = "center"
-            app:layout_constraintTop_toTopOf = "parent"
-            app:layout_constraintBottom_toBottomOf = "parent"
-            app:layout_constraintStart_toStartOf = "parent"
-            app:layout_constraintEnd_toEndOf = "parent"
-            android:id = "@+id/textView"/>
-
     <FrameLayout
-            android:layout_width = "320dp"
-            android:layout_height = "320dp"
+            android:layout_width = "match_parent"
+            android:layout_height = "match_parent"
             app:layout_constraintStart_toStartOf = "parent"
-            app:layout_constraintEnd_toEndOf = "parent"
-            app:layout_constraintTop_toTopOf = "@+id/textView">
+            app:layout_constraintEnd_toEndOf = "parent">
 
         <androidx.camera.view.PreviewView
                 android:id = "@+id/cameraxView"

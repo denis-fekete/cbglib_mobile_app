@@ -2,28 +2,41 @@ package cv.cbglib.commonUI
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.snackbar.Snackbar
 import cv.cbglib.detection.Detection
+import cv.cbglib.detection.LetterboxInfo
 import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
+import kotlin.math.max
 
 class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
     private val detections = mutableListOf<Detection>()
+    private var letterboxInfo = LetterboxInfo(1f, 0, 0)
 
     private val assetService =
         (context.applicationContext as MyApp).assetService
+
+    private var cameraWidth: Int = 0
+    private var cameraHeight: Int = 0
+
+    fun setCameraResolution(width: Int, height: Int) {
+        cameraWidth = width
+        cameraHeight = height
+    }
+
+    private var modelWidth: Int = 0
+    private var modelHeight: Int = 0
+    fun setModelResolution(width: Int, height: Int) {
+        modelWidth = width
+        modelHeight = height
+    }
 
     private val boxPaint = Paint().apply {
         color = ContextCompat.getColor(context, R.color.detection_box)
@@ -49,14 +62,39 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
         return assetService.labels?.getOrNull(det.classIndex) ?: "\"${det.classIndex}\""
     }
 
+    private var scaledRect: RectF = RectF()
+    private var bgRect: RectF = RectF()
+    private var rawRect: RectF = RectF()
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        detections.forEach { det ->
-            val rect = det.toRectF()
+        if (cameraWidth == 0 || cameraHeight == 0) throw IllegalStateException("Camera width or height was not set for OverlayView")
 
-            canvas.drawRect(rect, boxPaint)
+        val scale = max(
+            width.toFloat() / cameraWidth.toFloat(),
+            height.toFloat() / cameraHeight.toFloat()
+        )
+
+        val cropX = (cameraWidth * scale - width) / 2f
+        val cropY = (cameraHeight * scale - height) / 2f
+
+        detections.forEach { det ->
+            rawRect = det.toRectF()
+
+            val fixedLeft = (rawRect.left - letterboxInfo.padX) / letterboxInfo.scale
+            val fixedTop = (rawRect.top - letterboxInfo.padY) / letterboxInfo.scale
+            val fixedRight = (rawRect.right - letterboxInfo.padX) / letterboxInfo.scale
+            val fixedBottom = (rawRect.bottom - letterboxInfo.padY) / letterboxInfo.scale
+
+            scaledRect.set(
+                fixedLeft * scale - cropX,
+                fixedTop * scale - cropY,
+                fixedRight * scale - cropX,
+                fixedBottom * scale - cropY
+            )
+
+            canvas.drawRect(scaledRect, boxPaint)
 
             val label = "${getClassName(det)}: ${(det.score * 100).toInt()}%"
 
@@ -64,16 +102,14 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
             val textHeight = textPaint.fontMetrics.run { bottom - top }
 
             // filled rectangle for text
-            val bgRect = RectF(
-                rect.left,
-                rect.top - textHeight - 8,
-                rect.left + textWidth + 16,
-                rect.top
-            )
+            bgRect.left = scaledRect.left
+            bgRect.top = scaledRect.top - textHeight - 8
+            bgRect.right = scaledRect.left + textWidth + 16
+            bgRect.bottom = scaledRect.top
 
             canvas.drawRect(bgRect, textBackgroundPaint)
 
-            canvas.drawText(label, rect.left + 8, rect.top - 8, textPaint)
+            canvas.drawText(label, scaledRect.left + 8, scaledRect.top - 8, textPaint)
         }
     }
 
@@ -93,9 +129,10 @@ class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs)
             .show()
     }
 
-    fun updateBoxes(newBoxes: List<Detection>) {
+    fun updateBoxes(newBoxes: List<Detection>, letterboxInfo: LetterboxInfo) {
         detections.clear()
         detections.addAll(newBoxes)
+        this.letterboxInfo = letterboxInfo
         invalidate()
     }
 }

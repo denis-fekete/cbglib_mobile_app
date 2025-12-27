@@ -6,7 +6,6 @@ import ai.onnxruntime.OrtSession
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.core.graphics.scale
 import cv.cbglib.commonUI.OverlayView
 import org.opencv.android.Utils
 import org.opencv.core.Core
@@ -16,9 +15,13 @@ import org.opencv.core.MatOfFloat
 import org.opencv.core.MatOfInt
 import org.opencv.core.MatOfRect2d
 import org.opencv.core.Rect2d
+import org.opencv.core.Scalar
+import org.opencv.core.Size
 import org.opencv.dnn.Dnn
 import org.opencv.imgproc.Imgproc
 import java.nio.FloatBuffer
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 class ImageAnalyzer(
     modelBytes: ByteArray,
@@ -27,15 +30,16 @@ class ImageAnalyzer(
     var ortSession: OrtSession
     var ortEnvironment: OrtEnvironment = OrtEnvironment.getEnvironment()
     var inputName: String
+    var resolutionInitialized = false
 
-    val overlayViewWidth = overlayView.width
-    val overlayViewHeight = overlayView.height
-    val inputWidth = 640
-    val inputHeight = 640
-
+    val modelInputWidth = 640
+    val modelInputHeight = 640
+    var bitmapMat = Mat()
     private var skippedFramesCounter = 0
 
     init {
+        overlayView.setModelResolution(modelInputWidth, modelInputHeight)
+
         // try to use Nnapi for hardware accelerated detection, on fail use CPU
         try {
             val sessionOptions = OrtSession.SessionOptions()
@@ -57,18 +61,25 @@ class ImageAnalyzer(
         if (skippedFramesCounter++ > 4) {
             skippedFramesCounter = 0
 
-            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-            val bitmapMat = Mat()
+            if (!resolutionInitialized) {
+                overlayView.setCameraResolution(imageProxy.width, imageProxy.height)
+                resolutionInitialized = true
+            }
+
             Utils.bitmapToMat(
-                imageProxy.toBitmap().scale(inputWidth, inputHeight, true),
+                imageProxy.toBitmap(),
                 bitmapMat
             )
 
+            Log.d("ImageAnalyzer", "Original: w:${imageProxy.width}, h:${imageProxy.height}")
+
             imageProxy.close() // close so buffers can be reused
 
-            val rotatedMat = rotateMat(bitmapMat, rotationDegrees)
+            val (letterBoxMat, letterBoxInfo) = resizeAndLetterBox(bitmapMat, modelInputWidth)
+            Log.d("ImageAnalyzer", "Letterboxed: w:${letterBoxMat.cols()}, h:${letterBoxMat.rows()}")
+            Log.d("ImageAnalyzer", "Info: w:${letterBoxInfo.padX}, h:${letterBoxInfo.padY}, s:${letterBoxInfo.scale}")
 
-            val tensor = matToTensor(rotatedMat)
+            val tensor = matToTensor(letterBoxMat)
 
             val results = ortSession.run(mapOf(inputName to tensor))
 
@@ -77,7 +88,7 @@ class ImageAnalyzer(
             val filteredDetections = applyNMS(detections, 0.6f, 0.5f)
 
             overlayView.post {
-                overlayView.updateBoxes(filteredDetections)
+                overlayView.updateBoxes(filteredDetections, letterBoxInfo)
             }
 
             results.close()
@@ -87,55 +98,54 @@ class ImageAnalyzer(
     }
 
     /**
-     * Apply Non-Maximum Suppression (NMS) on list of [Detection]s. Implemented using OpenCV NSM function.
+     * Resized [src] Mat into a size that model can use. If source Mat is not in 1:1 aspect ratio a letterbox is
+     * applied to make it into desired size in 1:1 ratio. [newSize] is desired size and [padValue] is color value
+     * that will be used for padding.
      */
-    private fun applyNMS(
-        detections: List<Detection>,
-        confThreshold: Float = 0.5f,
-        iouThreshold: Float = 0.45f,
-    ): List<Detection> {
-        if (detections.isEmpty()) return emptyList()
+    fun resizeAndLetterBox(
+        src: Mat,
+        newSize: Int,
+        padValue: Scalar = Scalar(114.0, 114.0, 114.0)
+    ):
+            Pair<Mat, LetterboxInfo> {
+        val srcW = src.cols()
+        val srcH = src.rows()
 
-        // get mat bounding boxes
-        val rect2dArr: Array<Rect2d> = Array(detections.size) { i ->
-            detections[i].toRect2d()
-        }
-        val matRects = MatOfRect2d(*rect2dArr)
 
-        // get mat scores
-        val scoresArr = FloatArray(detections.size) { i -> detections[i].score }
-        val matScores = MatOfFloat(*scoresArr)
+        val scale = newSize.toFloat() / max(srcW, srcH)
+        val newW = (srcW * scale).roundToInt()
+        val newH = (srcH * scale).roundToInt()
 
-        // run opencv NMS
-        val matIndices = MatOfInt()
-        Dnn.NMSBoxes(matRects, matScores, confThreshold.toFloat(), iouThreshold.toFloat(), matIndices)
+        val resized = Mat()
+        Imgproc.resize(src, resized, Size(newW.toDouble(), newH.toDouble()))
 
-        // filter detections based on indices
-        val indicesArr = matIndices.toArray()
-        val filtered = indicesArr.map { detections[it] }
+        val padX = (newSize - newW) / 2
+        val padY = (newSize - newH) / 2
 
-        matRects.release()
-        matScores.release()
-        matIndices.release()
+        val output = Mat()
 
-        return filtered
+        Core.copyMakeBorder(
+            resized,
+            output,
+            padY,
+            newSize - newH - padY,
+            padX,
+            newSize - newW - padX,
+            Core.BORDER_CONSTANT,
+            padValue
+        )
+        Log.d(
+            "ImageAnalyzer",
+            "copyMakeBorder(resized:${resized.cols()}x${resized.rows()}, output:${output.cols()}x${output.rows()},"
+        )
+        Log.d(
+            "ImageAnalyzer",
+            "top:${padY}, bottom:${newSize - newH - padY}, left:${padX}, right:${newSize - newW - padX}"
+        )
+        resized.release()
+
+        return output to LetterboxInfo(scale, padX, padY)
     }
-
-    /**
-     * Rotates OpenCV [Mat] by [rotationDegrees] using OpenCV rotate function.
-     * @return Rotated [Mat]
-     */
-    fun rotateMat(src: Mat, rotationDegrees: Int): Mat {
-        val dst = Mat()
-        when (rotationDegrees) {
-            90 -> Core.rotate(src, dst, Core.ROTATE_90_CLOCKWISE)
-            180 -> Core.rotate(src, dst, Core.ROTATE_180)
-            270 -> Core.rotate(src, dst, Core.ROTATE_90_COUNTERCLOCKWISE)
-            else -> src.copyTo(dst)
-        }
-        return dst
-    }
-
 
     /**
      * Converts OpenCV Mat containing input image into an OnnxTensor that can be put into OnnxSession for object
@@ -202,8 +212,6 @@ class ImageAnalyzer(
         // transpose from [values, detections] into more user friendly [detections, values]
         val transposedDetections = transpose(rawDetections)
 
-        val scaleX = overlayViewWidth.toFloat() / inputHeight
-        val scaleY = overlayViewHeight.toFloat() / inputHeight
         val detections = mutableListOf<Detection>()
 
         for (value in transposedDetections) {
@@ -214,14 +222,49 @@ class ImageAnalyzer(
             if (score < confThreshold)
                 continue
 
-            val x = value[0] * scaleX
-            val y = value[1] * scaleY
-            val w = value[2] * scaleX
-            val h = value[3] * scaleY
+            val x = value[0]
+            val y = value[1]
+            val w = value[2]
+            val h = value[3]
 
             detections.add(Detection(x, y, w, h, score, classIndex))
         }
 
         return detections
+    }
+
+    /**
+     * Apply Non-Maximum Suppression (NMS) on list of [Detection]s. Implemented using OpenCV NSM function.
+     */
+    private fun applyNMS(
+        detections: List<Detection>,
+        confThreshold: Float = 0.5f,
+        iouThreshold: Float = 0.45f,
+    ): List<Detection> {
+        if (detections.isEmpty()) return emptyList()
+
+        // get mat bounding boxes
+        val rect2dArr: Array<Rect2d> = Array(detections.size) { i ->
+            detections[i].toRect2d()
+        }
+        val matRects = MatOfRect2d(*rect2dArr)
+
+        // get mat scores
+        val scoresArr = FloatArray(detections.size) { i -> detections[i].score }
+        val matScores = MatOfFloat(*scoresArr)
+
+        // run opencv NMS
+        val matIndices = MatOfInt()
+        Dnn.NMSBoxes(matRects, matScores, confThreshold.toFloat(), iouThreshold.toFloat(), matIndices)
+
+        // filter detections based on indices
+        val indicesArr = matIndices.toArray()
+        val filtered = indicesArr.map { detections[it] }
+
+        matRects.release()
+        matScores.release()
+        matIndices.release()
+
+        return filtered
     }
 }

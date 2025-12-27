@@ -2,9 +2,14 @@ package cv.cbglib.detection
 
 import android.content.Context
 import android.util.Size
+import androidx.appcompat.app.AlertDialog
+import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.concurrent.futures.await
@@ -48,13 +53,31 @@ class CameraController(
 
         val imageAnalyzer = ImageAnalyzer(assetService.modelByteArray, overlayView)
 
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setResolutionStrategy(
+                ResolutionStrategy(
+                    Size(640, 480),
+                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                )
+            )
+            .setAspectRatioStrategy(
+                AspectRatioStrategy(
+                    AspectRatio.RATIO_16_9,
+                    AspectRatioStrategy.FALLBACK_RULE_AUTO
+                )
+            )
+            .build()
+
         val imageAnalysis = ImageAnalysis.Builder()
-            .setTargetResolution(Size(640, 640))
+            .setOutputImageRotationEnabled(true)
+            .setResolutionSelector(resolutionSelector)
             .build()
 
         imageAnalysis.setAnalyzer(cameraExecutor, imageAnalyzer)
 
-        preview = Preview.Builder().build()
+        preview = Preview.Builder()
+            .setResolutionSelector(resolutionSelector)
+            .build()
         preview.surfaceProvider = previewView.surfaceProvider
 
         try {
@@ -65,7 +88,6 @@ class CameraController(
                 imageAnalysis,
                 preview
             )
-
         } catch (exc: Exception) {
 
         }
