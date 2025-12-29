@@ -9,19 +9,20 @@ import android.view.ViewGroup
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import cv.cbglib.detection.CameraController
-import cv.cbglib.detection.AssetService
-import cv.demoapps.bangdemo.MainActivity
+import cv.cbglib.detection.Detection
 import cv.cbglib.commonUI.OverlayView
 import cv.demoapps.bangdemo.R
 import cv.demoapps.bangdemo.viewmodels.CameraViewModel
+import cv.demoapps.bangdemo.views.BangOverlayView
 import kotlinx.coroutines.launch
 
 class CameraFragment :
     BaseNavigationFragment(R.layout.fragment_camera) {
     private lateinit var cameraController: CameraController
     private lateinit var cameraxView: PreviewView
-    private lateinit var overlayView: OverlayView
+    private lateinit var overlayView: BangOverlayView
 
     private val viewModel: CameraViewModel by viewModels()
 
@@ -35,10 +36,16 @@ class CameraFragment :
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         cameraxView = view.findViewById<PreviewView>(R.id.cameraxView)
-        overlayView = view.findViewById<OverlayView>(R.id.overlayView)
+        overlayView = view.findViewById<BangOverlayView>(R.id.overlayView)
 
         // fill view, crop excess
         cameraxView.scaleType = PreviewView.ScaleType.FILL_CENTER
+
+        overlayView.onDetectionClicked = { detection ->
+            val action = CameraFragmentDirections.actionCameraFragmentToCardDetailsFragment(detection.classIndex)
+
+            findNavController().navigate(action)
+        }
 
         cameraController = CameraController(
             requireContext(),
@@ -57,6 +64,7 @@ class CameraFragment :
             }
         }
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

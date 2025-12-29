@@ -35,7 +35,7 @@ class ImageAnalyzer(
     val modelInputWidth = 640
     val modelInputHeight = 640
     var bitmapMat = Mat()
-    private var skippedFramesCounter = 0
+    private var skippedFramesCounter: Int = 999999
 
     init {
         // try to use Nnapi for hardware accelerated detection, on fail use CPU

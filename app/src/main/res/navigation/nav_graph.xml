@@ -9,6 +9,10 @@
             android:name = "cv.demoapps.bangdemo.fragments.CameraFragment"
             android:label = "fragment_camera"
             tools:layout = "@layout/fragment_camera">
+        <action
+                android:id = "@+id/action_cameraFragment_to_cardDetailsFragment"
+                app:destination = "@id/cardDetailsFragment"
+                />
     </fragment>
     <fragment
             android:id = "@+id/navigationPanelFragment"
@@ -26,5 +30,14 @@
             android:name = "cv.demoapps.bangdemo.fragments.SettingsFragment"
             android:label = "fragment_settings"
             tools:layout = "@layout/fragment_settings">
+    </fragment>
+    <fragment
+            android:id = "@+id/cardDetailsFragment"
+            android:name = "cv.demoapps.bangdemo.fragments.CardDetailsFragment"
+            android:label = "fragment_card_details"
+            tools:layout = "@layout/fragment_card_details">
+        <argument
+                android:name = "detectionId"
+                app:argType = "integer"/>
     </fragment>
 </navigation>

@@ -4,7 +4,7 @@
     <color name = "white">#FFFFFFFF</color>
     <color name = "navigation_icon_selected">#00FF00</color>
     <color name = "navigation_icon_default">#AAAAAA</color>
-    <color name = "detection_box">#00FF00</color>
-    <color name = "detection_text">#FFFFFF</color>
-    <color name = "detection_text_background">#0000AA</color>
+    <color name = "detection_box">#FFFFFF</color>
+    <color name = "detection_text">#000000</color>
+    <color name = "detection_text_background">#FFFFFF</color>
 </resources>
