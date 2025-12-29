@@ -71,6 +71,7 @@ class CameraController(
         val imageAnalysis = ImageAnalysis.Builder()
             .setOutputImageRotationEnabled(true)
             .setResolutionSelector(resolutionSelector)
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
 
         imageAnalysis.setAnalyzer(cameraExecutor, imageAnalyzer)

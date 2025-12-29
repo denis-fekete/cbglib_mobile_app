@@ -38,8 +38,6 @@ class ImageAnalyzer(
     private var skippedFramesCounter = 0
 
     init {
-        overlayView.setModelResolution(modelInputWidth, modelInputHeight)
-
         // try to use Nnapi for hardware accelerated detection, on fail use CPU
         try {
             val sessionOptions = OrtSession.SessionOptions()
@@ -58,7 +56,7 @@ class ImageAnalyzer(
      * and is an in buffers, these should be freed as fast as possible.
      */
     override fun analyze(imageProxy: ImageProxy) {
-        if (skippedFramesCounter++ > 4) {
+        if (skippedFramesCounter++ > 5) {
             skippedFramesCounter = 0
 
             if (!resolutionInitialized) {
@@ -71,13 +69,9 @@ class ImageAnalyzer(
                 bitmapMat
             )
 
-            Log.d("ImageAnalyzer", "Original: w:${imageProxy.width}, h:${imageProxy.height}")
-
             imageProxy.close() // close so buffers can be reused
 
             val (letterBoxMat, letterBoxInfo) = resizeAndLetterBox(bitmapMat, modelInputWidth)
-            Log.d("ImageAnalyzer", "Letterboxed: w:${letterBoxMat.cols()}, h:${letterBoxMat.rows()}")
-            Log.d("ImageAnalyzer", "Info: w:${letterBoxInfo.padX}, h:${letterBoxInfo.padY}, s:${letterBoxInfo.scale}")
 
             val tensor = matToTensor(letterBoxMat)
 
@@ -133,14 +127,6 @@ class ImageAnalyzer(
             newSize - newW - padX,
             Core.BORDER_CONSTANT,
             padValue
-        )
-        Log.d(
-            "ImageAnalyzer",
-            "copyMakeBorder(resized:${resized.cols()}x${resized.rows()}, output:${output.cols()}x${output.rows()},"
-        )
-        Log.d(
-            "ImageAnalyzer",
-            "top:${padY}, bottom:${newSize - newH - padY}, left:${padX}, right:${newSize - newW - padX}"
         )
         resized.release()
 
