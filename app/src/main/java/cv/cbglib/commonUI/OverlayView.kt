@@ -8,20 +8,15 @@ import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import cv.cbglib.detection.Detection
 import cv.cbglib.detection.LetterboxInfo
-import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
 import kotlin.math.max
 
 abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
     protected val detections = mutableListOf<Detection>()
     private var letterboxInfo = LetterboxInfo(1f, 0, 0)
-
-    private val assetService =
-        (context.applicationContext as MyApp).assetService
 
     private var cameraWidth: Int = 0
     private var cameraHeight: Int = 0
@@ -31,9 +26,12 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
 
     var onDetectionClicked: ((detection: Detection) -> Unit)? = null
 
-    fun setCameraResolution(width: Int, height: Int) {
-        cameraWidth = width
-        cameraHeight = height
+    /**
+     * Sets camera resolution values and calculates scale and crop values for the [OverlayView].
+     */
+    fun setCameraResolution(cameraW: Int, cameraH: Int) {
+        cameraWidth = cameraW
+        cameraHeight = cameraH
 
         scale = max(
             this.width.toFloat() / cameraWidth.toFloat(),
@@ -49,13 +47,6 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
         textSize = 48f
         typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
         isAntiAlias = true
-    }
-
-    protected fun getClassName(det: Detection): String {
-        return assetService.labels?.getOrElse(
-            det.classIndex
-        ) { "\"${det.classIndex}\"" }
-            .toString()
     }
 
     private var tmpRect: RectF = RectF()

@@ -1,15 +1,23 @@
 package cv.demoapps.bangdemo.fragments
 
+import android.app.Application
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Space
 import android.widget.TextView
+import android.widget.Toast
+import androidx.core.view.marginRight
+import androidx.core.view.marginTop
+import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
-import cv.demoapps.bangdemo.views.BangOverlayView
 
-private const val ARG_PARAM1 = "detectionId"
+private const val ARG_DETECTION_ID = "detectionId"
 
 /**
  * Fragment to used for Card details display,
@@ -17,14 +25,29 @@ private const val ARG_PARAM1 = "detectionId"
  * create an instance of this fragment.
  */
 class CardDetailsFragment : Fragment() {
-    // TODO: Rename and change types of parameters
     private var detectionId: Int? = null
     lateinit var titleTextView: TextView
+    lateinit var descriptionTextView: TextView
+    lateinit var imageView: ImageView
+    lateinit var symbolsLayout: LinearLayout
+
+    private val assetService by lazy {
+        (requireContext().applicationContext as MyApp).assetService
+    }
+
+    private val cardDetailsService by lazy {
+        (requireContext().applicationContext as MyApp).cardDetailsService
+    }
+
+    private val symbolDetailsService by lazy {
+        (requireContext().applicationContext as MyApp).symbolDetailsService
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            detectionId = it.getInt(ARG_PARAM1)
+            detectionId = it.getInt(ARG_DETECTION_ID)
         }
     }
 
@@ -38,23 +61,65 @@ class CardDetailsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         titleTextView = view.findViewById<TextView>(R.id.titleText)
-        titleTextView.text = detectionId.toString()
+        descriptionTextView = view.findViewById<TextView>(R.id.descriptionText)
+        imageView = view.findViewById<ImageView>(R.id.imageView)
+        symbolsLayout = view.findViewById<LinearLayout>(R.id.symbolsLayout)
+
+        symbolsLayout.removeAllViews()
+
+        if (detectionId != null) {
+            titleTextView.text = cardDetailsService.items[detectionId]?.name
+            descriptionTextView.text = cardDetailsService.items[detectionId]?.description
+
+            val bitmap = assetService.getImage("${cardDetailsService.items[detectionId]?.imagePath}", "card_scans")
+            if (bitmap != null) {
+                imageView.setImageBitmap(bitmap)
+            }
+
+            if (cardDetailsService.items[detectionId]?.symbols != null) {
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                )
+                params.setMargins(0, 0, 40, 0)
+
+                for (symbol in cardDetailsService.items[detectionId]?.symbols!!) {
+                    val imgPath = symbolDetailsService.items[symbol]?.imagePath ?: continue
+
+                    val bitmap = assetService.getImage(imgPath, "")
+                    val imgView = ImageView(context)
+                    imgView.setImageBitmap(bitmap)
+                    imgView.setOnClickListener {
+                        Toast.makeText(
+                            context,
+                            "Clicked on ${symbolDetailsService.items[symbol]?.name}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    imgView.layoutParams = params
+
+                    symbolsLayout.addView(imgView)
+
+                }
+            }
+
+        }
     }
 
     companion object {
         /**
-         * Use this factory method to create a new instance of
+         * Factory method to create a new instance of
          * this fragment using the provided parameters.
          *
-         * @param param1 Parameter 1.
+         * @param detectionId Detection ID that will be displayed in Fragment
          * @return A new instance of fragment CardDetailsFragment.
          */
-        // TODO: Rename and change types and number of parameters
         @JvmStatic
-        fun newInstance(param1: String) =
+        fun newInstance(id: String) =
             CardDetailsFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
+                    putString(ARG_DETECTION_ID, id)
                 }
             }
     }

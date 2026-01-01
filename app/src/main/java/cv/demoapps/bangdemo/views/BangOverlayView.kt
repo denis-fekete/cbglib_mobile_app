@@ -8,11 +8,15 @@ import android.graphics.Typeface
 import android.util.AttributeSet
 import androidx.core.content.ContextCompat
 import cv.cbglib.commonUI.OverlayView
+import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
 
 class BangOverlayView(context: Context, attrs: AttributeSet?) : OverlayView(context, attrs) {
     private var scaledRect: RectF = RectF()
     private var bgRect: RectF = RectF()
+
+    private val cardDetailsService =
+        (context.applicationContext as MyApp).cardDetailsService
 
     private val boxPaint = Paint().apply {
         color = ContextCompat.getColor(context, R.color.detection_box)
@@ -44,8 +48,7 @@ class BangOverlayView(context: Context, attrs: AttributeSet?) : OverlayView(cont
 
                 canvas.drawRect(scaledRect, boxPaint)
 
-                val label = "${getClassName(det)}: ${(det.score * 100).toInt()}%"
-
+                val label = "${cardDetailsService.items[det.classIndex]?.name}: ${(det.score * 100).toInt()}%"
                 val textWidth = textPaint.measureText(label)
                 val textHeight = textPaint.fontMetrics.run { bottom - top }
 

@@ -1,0 +1,304 @@
+[
+    {
+        "id": 0,
+        "name": "Bang",
+        "description": "",
+        "symbols": [
+            2,
+            6
+        ],
+        "imagePath": "bang.jpg"
+    },
+    {
+        "id": 1,
+        "name": "Panico",
+        "description": "",
+        "symbols": [
+            5,
+            8
+        ],
+        "imagePath": "panico.jpg"
+    },
+    {
+        "id": 2,
+        "name": "Mancato",
+        "description": "",
+        "symbols": [
+            7
+        ],
+        "imagePath": "mancato.jpg"
+    },
+    {
+        "id": 3,
+        "name": "Birra",
+        "description": "",
+        "symbols": [],
+        "imagePath": "birra.jpg"
+    },
+    {
+        "id": 4,
+        "name": "Barile",
+        "description": "",
+        "symbols": [],
+        "imagePath": "barile.jpg"
+    },
+    {
+        "id": 5,
+        "name": "Dinamite",
+        "description": "",
+        "symbols": [],
+        "imagePath": "dinamite.jpg"
+    },
+    {
+        "id": 6,
+        "name": "Gatling",
+        "description": "",
+        "symbols": [],
+        "imagePath": "gatling.jpg"
+    },
+    {
+        "id": 7,
+        "name": "Prigione",
+        "description": "",
+        "symbols": [],
+        "imagePath": "prigione.jpg"
+    },
+    {
+        "id": 8,
+        "name": "Duello",
+        "description": "",
+        "symbols": [],
+        "imagePath": "duello.jpg"
+    },
+    {
+        "id": 9,
+        "name": "Indiani",
+        "description": "",
+        "symbols": [],
+        "imagePath": "indiani.jpg"
+    },
+    {
+        "id": 10,
+        "name": "Mustang",
+        "description": "",
+        "symbols": [],
+        "imagePath": "mustang.jpg"
+    },
+    {
+        "id": 11,
+        "name": "Saloon",
+        "description": "",
+        "symbols": [],
+        "imagePath": "saloon.jpg"
+    },
+    {
+        "id": 12,
+        "name": "Diligenza",
+        "description": "",
+        "symbols": [],
+        "imagePath": "diligenza.jpg"
+    },
+    {
+        "id": 13,
+        "name": "Emporio",
+        "description": "",
+        "symbols": [],
+        "imagePath": "emporio.jpg"
+    },
+    {
+        "id": 14,
+        "name": "Mirino",
+        "description": "",
+        "symbols": [],
+        "imagePath": "mirino.jpg"
+    },
+    {
+        "id": 15,
+        "name": "Wells Fargo",
+        "description": "",
+        "symbols": [],
+        "imagePath": "wells_farco.jpg"
+    },
+    {
+        "id": 16,
+        "name": "Fuorilegge",
+        "description": "",
+        "symbols": [],
+        "imagePath": "fuorilegge.jpg"
+    },
+    {
+        "id": 17,
+        "name": "Rinnegato",
+        "description": "",
+        "symbols": [],
+        "imagePath": "rinnegato.jpg"
+    },
+    {
+        "id": 18,
+        "name": "Sceriffo",
+        "description": "",
+        "symbols": [],
+        "imagePath": "sceriffo.jpg"
+    },
+    {
+        "id": 19,
+        "name": "Vice",
+        "description": "",
+        "symbols": [],
+        "imagePath": "vice.jpg"
+    },
+    {
+        "id": 20,
+        "name": "Bart Cassidy",
+        "description": "",
+        "symbols": [],
+        "imagePath": "bard_cassidy.jpg"
+    },
+    {
+        "id": 21,
+        "name": "Jesse Jones",
+        "description": "",
+        "symbols": [],
+        "imagePath": "jesse_jones.jpg"
+    },
+    {
+        "id": 22,
+        "name": "Pedro Ramirez",
+        "description": "",
+        "symbols": [],
+        "imagePath": "pedro_ramirez.jpg"
+    },
+    {
+        "id": 23,
+        "name": "Vulture Sam",
+        "description": "",
+        "symbols": [],
+        "imagePath": "vulture_sam.jpg"
+    },
+    {
+        "id": 24,
+        "name": "Black Jack",
+        "description": "",
+        "symbols": [],
+        "imagePath": "black_jack.jpg"
+    },
+    {
+        "id": 25,
+        "name": "Jourdonnais",
+        "description": "",
+        "symbols": [],
+        "imagePath": "jourdonnais.jpg"
+    },
+    {
+        "id": 26,
+        "name": "Rose Doolan",
+        "description": "",
+        "symbols": [],
+        "imagePath": "rose_doolan.jpg"
+    },
+    {
+        "id": 27,
+        "name": "Willy The Kid",
+        "description": "",
+        "symbols": [],
+        "imagePath": "willy_the_kid.jpg"
+    },
+    {
+        "id": 28,
+        "name": "Calamity Janet",
+        "description": "",
+        "symbols": [],
+        "imagePath": "calamity_janet.jpg"
+    },
+    {
+        "id": 29,
+        "name": "Kit Carlson",
+        "description": "",
+        "symbols": [],
+        "imagePath": "kit_carlson.jpg"
+    },
+    {
+        "id": 30,
+        "name": "Sid Ketchum",
+        "description": "",
+        "symbols": [],
+        "imagePath": "sid_ketchum.jpg"
+    },
+    {
+        "id": 31,
+        "name": "Cat Balou",
+        "description": "",
+        "symbols": [],
+        "imagePath": "cat_baidu.jpg"
+    },
+    {
+        "id": 32,
+        "name": "Lucky Duke",
+        "description": "",
+        "symbols": [],
+        "imagePath": "lucky_duke.jpg"
+    },
+    {
+        "id": 33,
+        "name": "Slab The Killer",
+        "description": "",
+        "symbols": [],
+        "imagePath": "slab_the_killer.jpg"
+    },
+    {
+        "id": 34,
+        "name": "El Gringo",
+        "description": "",
+        "symbols": [],
+        "imagePath": "el_gringo.jpg"
+    },
+    {
+        "id": 35,
+        "name": "Paul Regret",
+        "description": "",
+        "symbols": [],
+        "imagePath": "paul_regret.jpg"
+    },
+    {
+        "id": 36,
+        "name": "Suzy Lafayette",
+        "description": "",
+        "symbols": [],
+        "imagePath": "suzy_lafayette.jpg"
+    },
+    {
+        "id": 37,
+        "name": "Remington",
+        "description": "",
+        "symbols": [],
+        "imagePath": "remington.jpg"
+    },
+    {
+        "id": 38,
+        "name": "Rev Carabine",
+        "description": "",
+        "symbols": [],
+        "imagePath": "rev_carabine.jpg"
+    },
+    {
+        "id": 39,
+        "name": "Schofield",
+        "description": "",
+        "symbols": [],
+        "imagePath": "schofield.jpg"
+    },
+    {
+        "id": 40,
+        "name": "Volcanic",
+        "description": "",
+        "symbols": [],
+        "imagePath": "volcanic.jpg"
+    },
+    {
+        "id": 41,
+        "name": "Winchester",
+        "description": "",
+        "symbols": [],
+        "imagePath": "winchester.jpg"
+    }
+]

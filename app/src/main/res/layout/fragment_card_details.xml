@@ -1,18 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android = "http://schemas.android.com/apk/res/android"
-                                                   xmlns:app = "http://schemas.android.com/apk/res-auto"
-                                                   xmlns:tools = "http://schemas.android.com/tools"
-                                                   android:layout_width = "match_parent"
-                                                   android:layout_height = "match_parent"
-                                                   tools:context = ".fragments.CardDetailsFragment">
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android = "http://schemas.android.com/apk/res/android"
+        xmlns:app = "http://schemas.android.com/apk/res-auto"
+        xmlns:tools = "http://schemas.android.com/tools"
+        android:layout_width = "match_parent"
+        android:layout_height = "match_parent"
+        tools:context = ".fragments.CardDetailsFragment">
 
     <TextView
             android:id = "@+id/titleText"
-            android:textSize = "20sp"
+            android:textSize = "32sp"
             android:layout_width = "match_parent"
-            android:layout_height = "match_parent"
-            android:text = "@string/hello_blank_fragment"
-            app:layout_constraintTop_toTopOf = "parent"/>
+            android:layout_height = "wrap_content"
+            android:text = "@string/placeholder_title"
+            android:textAlignment = "center"
+            android:layout_marginTop = "20dp"
+            app:layout_constraintTop_toTopOf = "parent"
+            />
 
+    <ImageView
+            android:id = "@+id/imageView"
+            android:layout_width = "wrap_content"
+            android:layout_height = "wrap_content"
+            android:contentDescription = "@string/card_details_image_content_description"
+            android:src = "@drawable/bitmap"
+            app:layout_constraintTop_toBottomOf = "@+id/titleText"
+            app:layout_constraintEnd_toEndOf = "parent"
+            app:layout_constraintStart_toStartOf = "parent"
+            android:layout_marginTop = "20dp"
+            />
+
+    <HorizontalScrollView
+            android:id = "@+id/symbolsScrollView"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:orientation = "horizontal"
+            app:layout_constraintTop_toBottomOf = "@+id/imageView"
+            android:layout_margin = "20dp"
+            >
+
+        <LinearLayout
+                android:id = "@+id/symbolsLayout"
+                android:layout_width = "wrap_content"
+                android:layout_height = "match_parent"
+                >
+
+            <ImageView
+                    android:id = "@+id/placeholder"
+                    android:layout_width = "70dp"
+                    android:layout_height = "70dp"
+                    android:contentDescription = "@string/card_details_image_content_description"
+                    android:src = "@drawable/bitmap"
+                    app:layout_constraintTop_toBottomOf = "@+id/titleText"
+                    app:layout_constraintEnd_toEndOf = "parent"
+                    app:layout_constraintStart_toStartOf = "parent"
+                    />
+
+
+        </LinearLayout>
+
+
+    </HorizontalScrollView>
+
+    <TextView
+            android:id = "@+id/descriptionText"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:text = "@string/card_details_description"
+            app:layout_constraintTop_toBottomOf = "@+id/symbolsScrollView"
+            app:layout_constraintEnd_toEndOf = "parent"
+            app:layout_constraintStart_toStartOf = "parent"
+            android:layout_marginTop = "20dp"
+            />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
