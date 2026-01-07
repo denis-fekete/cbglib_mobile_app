@@ -5,7 +5,7 @@
         android:layout_width = "match_parent"
         android:layout_height = "match_parent"
         xmlns:app = "http://schemas.android.com/apk/res-auto"
-        tools:context = ".fragments.CameraFragment">
+        tools:context = "cv.demoapps.bangdemo.fragments.CameraFragment">
 
     <FrameLayout
             android:layout_width = "match_parent"
@@ -24,15 +24,4 @@
                 android:layout_height = "match_parent"/>
 
     </FrameLayout>
-
-    <androidx.fragment.app.FragmentContainerView
-            android:id = "@+id/navigationPanel"
-            android:name = "cv.demoapps.bangdemo.fragments.NavigationPanelFragment"
-            android:layout_width = "wrap_content"
-            android:layout_height = "wrap_content"
-            app:layout_constraintBottom_toBottomOf = "parent"
-            app:layout_constraintStart_toStartOf = "parent"
-            app:layout_constraintEnd_toEndOf = "parent"
-            tools:layout = "@layout/fragment_navigation_panel"/>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,28 +2,34 @@ package cv.cbglib.commonUI
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Paint
 import android.graphics.RectF
-import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import androidx.core.content.ContextCompat
 import cv.cbglib.detection.Detection
 import cv.cbglib.detection.LetterboxInfo
-import cv.demoapps.bangdemo.R
 import kotlin.math.max
 
+/**
+ * Abstract class used as a view for drawing detections, class does not contain a [drawDetections] implementation where
+ * a specific implementation of how detections are represent on screen are coded.
+ */
 abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
+    /**
+     * List containing current [Detection] objects that are on screen.
+     */
     protected val detections = mutableListOf<Detection>()
     private var letterboxInfo = LetterboxInfo(1f, 0, 0)
-
     private var cameraWidth: Int = 0
     private var cameraHeight: Int = 0
     private var scale: Float = 1f
     private var cropX: Float = 0f
     private var cropY: Float = 0f
+    private var tmpRect: RectF = RectF()
 
+    /**
+     * Callback function invoked when [Detection] is clicked on screen. Contains a [Detection] that was clicked.
+     */
     var onDetectionClicked: ((detection: Detection) -> Unit)? = null
 
     /**
@@ -42,24 +48,19 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
         cropY = (cameraHeight * scale - this.height) / 2f
     }
 
-    private val errorTextPaint = Paint().apply {
-        color = ContextCompat.getColor(context, R.color.detection_text)
-        textSize = 48f
-        typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
-        isAntiAlias = true
-    }
-
-    private var tmpRect: RectF = RectF()
-
-
-    protected fun writeErrorOnScreen(canvas: Canvas, text: String) {
-        canvas.drawText(text, 0f, height / 2f, errorTextPaint)
-    }
-
+    /**
+     * Simple check whenever camera dimensions have been set. Mostly to prevent division by zero errors.
+     */
     protected fun cameraDimensionsCorrect(): Boolean {
         return (cameraWidth > 0 && cameraHeight > 0)
     }
 
+    /**
+     * Scales [Detection] to current screen, since image in [cv.cbglib.detection.ImageAnalyzer] might be different size
+     * than screen image scaling and cropping is needed. Info about current image format from
+     * [cv.cbglib.detection.ImageAnalyzer] is stored in [letterboxInfo] that is updated alongside new [detections] in
+     * [updateBoxes] function that is called by inside image analyzer.
+     */
     protected fun scaleDetectionToScreenRect(det: Detection): RectF {
         tmpRect = det.toRectF()
 
@@ -78,6 +79,25 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
         return tmpRect
     }
 
+    /**
+     * Function is called each [onDraw] called (every time this view is invalidated).
+     * Derived classes must implement this function!
+     */
+    protected abstract fun drawDetections(canvas: Canvas)
+
+    /**
+     * Cleans internal detection list and adds new boxes into it.
+     *
+     * @param newBoxes list of <Detection> objects that contain info about found detections in current image
+     * @param letterboxInfo info about current Detections and image, used for scaling of [onTouchEvent] events.
+     */
+    fun updateBoxes(newBoxes: List<Detection>, letterboxInfo: LetterboxInfo) {
+        detections.clear()
+        detections.addAll(newBoxes)
+        this.letterboxInfo = letterboxInfo
+        invalidate()
+    }
+
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event?.action == MotionEvent.ACTION_DOWN) {
             detections.firstOrNull { scaleDetectionToScreenRect(it).contains(event.x, event.y) }
@@ -87,10 +107,8 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
         return true
     }
 
-    fun updateBoxes(newBoxes: List<Detection>, letterboxInfo: LetterboxInfo) {
-        detections.clear()
-        detections.addAll(newBoxes)
-        this.letterboxInfo = letterboxInfo
-        invalidate()
+    final override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        drawDetections(canvas)
     }
 }

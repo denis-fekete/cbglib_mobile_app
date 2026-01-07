@@ -10,11 +10,24 @@ import androidx.core.content.ContextCompat
 import cv.cbglib.commonUI.OverlayView
 import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
+import kotlin.math.max
 
 class BangOverlayView(context: Context, attrs: AttributeSet?) : OverlayView(context, attrs) {
+    // helper variable to prevent creating a new object on each redraw
     private var scaledRect: RectF = RectF()
+
+    // helper variable to prevent creating a new object on each redraw
     private var bgRect: RectF = RectF()
 
+    /**
+     * Service used for looking up details about [cv.cbglib.detection.Detection] objects based on detection
+     * `classIndex`. Usage:
+     *
+     * `cardDetailsService.items[cv.cbglib.detection.Detection.classIndex]?.name`
+     *
+     * Will return a name of detection based on it classIndex
+     * @see [cv.demoapps.bangdemo.data.CardDetail] for other values that can be read
+     */
     private val cardDetailsService =
         (context.applicationContext as MyApp).cardDetailsService
 
@@ -38,29 +51,44 @@ class BangOverlayView(context: Context, attrs: AttributeSet?) : OverlayView(cont
         typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
         isAntiAlias = true
     }
+    private val errorTextPaint = Paint().apply {
+        color = ContextCompat.getColor(context, R.color.detection_text)
+        textSize = 48f
+        typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+        isAntiAlias = true
+    }
 
-    override fun onDraw(canvas: Canvas) {
+    fun writeErrorOnScreen(canvas: Canvas, text: String) {
+        canvas.drawText(text, 0f, height / 2f, errorTextPaint)
+    }
+
+    override fun drawDetections(canvas: Canvas) {
         if (!cameraDimensionsCorrect()) {
-            writeErrorOnScreen(canvas, "Camera is loading")
+            writeErrorOnScreen(canvas, "Camera dimensions were not initialized yet!")
         } else {
             detections.forEach { det ->
+                // scale detection into correct size, because detection from model might not have same width and height
+                // as camera images, or screen that this overlay is drawing onto
                 scaledRect = scaleDetectionToScreenRect(det)
 
                 canvas.drawRect(scaledRect, boxPaint)
 
+                // get label from service
                 val label = "${cardDetailsService.items[det.classIndex]?.name}: ${(det.score * 100).toInt()}%"
+                // determine text width and height
                 val textWidth = textPaint.measureText(label)
                 val textHeight = textPaint.fontMetrics.run { bottom - top }
 
+                val padding = 8
                 // filled rectangle for text
-                bgRect.left = scaledRect.left
-                bgRect.top = scaledRect.top - textHeight - 8
-                bgRect.right = scaledRect.left + textWidth + 16
-                bgRect.bottom = scaledRect.top
+                bgRect.left = max(scaledRect.left, 0f)
+                bgRect.top = max(scaledRect.top - textHeight - padding, 0f)
+                bgRect.right = bgRect.left + textWidth + 2 * padding
+                bgRect.bottom = bgRect.top + textHeight + padding
 
                 canvas.drawRect(bgRect, textBackgroundPaint)
 
-                canvas.drawText(label, scaledRect.left + 8, scaledRect.top - 8, textPaint)
+                canvas.drawText(label, bgRect.left + padding, bgRect.bottom - padding, textPaint)
             }
         }
     }

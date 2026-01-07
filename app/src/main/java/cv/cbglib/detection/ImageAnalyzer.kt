@@ -27,15 +27,24 @@ class ImageAnalyzer(
     modelBytes: ByteArray,
     private val overlayView: OverlayView,
 ) : ImageAnalysis.Analyzer {
-    var ortSession: OrtSession
-    var ortEnvironment: OrtEnvironment = OrtEnvironment.getEnvironment()
-    var inputName: String
-    var resolutionInitialized = false
+    /**
+     * Number of frames to skip, not every frame of camera, needs to be checked, 0 means every
+     */
+    private var framesToSkip = 5
 
-    val modelInputWidth = 640
-    val modelInputHeight = 640
-    var bitmapMat = Mat()
-    private var skippedFramesCounter: Int = 999999
+    private var skippedFramesCounter: Int = Int.MAX_VALUE - framesToSkip - 1
+    private var ortSession: OrtSession
+    private var ortEnvironment: OrtEnvironment = OrtEnvironment.getEnvironment()
+    private var inputName: String
+    private var resolutionInitialized = false
+    private val modelInputWidth = 640
+    //    val modelInputHeight = 640 // not used since model expects 1:1 ratio of images
+
+
+    // "cache" variables to prevent initializing new object each new frame
+    private var bitmapMat = Mat()
+    private var resized = Mat()
+    private var letterBoxMat = Mat()
 
     init {
         // try to use Nnapi for hardware accelerated detection, on fail use CPU
@@ -56,71 +65,81 @@ class ImageAnalyzer(
      * and is an in buffers, these should be freed as fast as possible.
      */
     override fun analyze(imageProxy: ImageProxy) {
-        if (skippedFramesCounter++ > 5) {
-            skippedFramesCounter = 0
-
-            if (!resolutionInitialized) {
-                overlayView.setCameraResolution(imageProxy.width, imageProxy.height)
-                resolutionInitialized = true
-            }
-
-            Utils.bitmapToMat(
-                imageProxy.toBitmap(),
-                bitmapMat
-            )
-
-            imageProxy.close() // close so buffers can be reused
-
-            val (letterBoxMat, letterBoxInfo) = resizeAndLetterBox(bitmapMat, modelInputWidth)
-
-            val tensor = matToTensor(letterBoxMat)
-
-            val results = ortSession.run(mapOf(inputName to tensor))
-
-            val detections = extractDetections(results)
-
-            val filteredDetections = applyNMS(detections, 0.6f, 0.5f)
-
-            overlayView.post {
-                overlayView.updateBoxes(filteredDetections, letterBoxInfo)
-            }
-
-            results.close()
-        } else {
+        if (skippedFramesCounter++ < framesToSkip) {
             imageProxy.close()
+            return
         }
+
+        skippedFramesCounter = 0
+
+        if (!resolutionInitialized) {
+            overlayView.setCameraResolution(imageProxy.width, imageProxy.height)
+            resolutionInitialized = true
+        }
+
+        Utils.bitmapToMat(
+            imageProxy.toBitmap(),
+            bitmapMat
+        )
+
+        // close imageProxy so buffers can be reused
+        imageProxy.close()
+
+        // resize image into expected size for model, apply letterboxing if needed
+        val letterBoxInfo = resizeAndLetterBox(bitmapMat, modelInputWidth, letterBoxMat)
+        // create tensor from Mat
+        val tensor = matToTensor(letterBoxMat)
+        // run model on tensor, and get result
+        val results = ortSession.run(mapOf(inputName to tensor))
+        // extract bounding boxes [Detection] objects from results that
+        val detections = extractDetections(results)
+        // apply NMS onto results
+        val filteredDetections = applyNMS(detections, 0.6f, 0.5f)
+        // add new [Detection] boxes to draw and invalidate View that is drawing them
+        overlayView.post {
+            overlayView.updateBoxes(filteredDetections, letterBoxInfo)
+        }
+
+        results.close()
+        tensor.close()
     }
 
     /**
      * Resized [src] Mat into a size that model can use. If source Mat is not in 1:1 aspect ratio a letterbox is
      * applied to make it into desired size in 1:1 ratio. [newSize] is desired size and [padValue] is color value
      * that will be used for padding.
+     * @param src source Mat containing image
+     * @param newSize new size of pixels, since 1:1 is expected only one dimension is needed
+     * @param outputMap Output Mat where output of this operation will be stored
+     * @param padValue color used for padding
+     *
+     * @return LetterboxInfo letterboxed
      */
     fun resizeAndLetterBox(
         src: Mat,
         newSize: Int,
-        padValue: Scalar = Scalar(114.0, 114.0, 114.0)
-    ):
-            Pair<Mat, LetterboxInfo> {
+        outputMap: Mat,
+        padValue: Scalar = Scalar(114.0, 114.0, 114.0),
+    ): LetterboxInfo {
+        // find bigger dimension (width / height)
         val srcW = src.cols()
         val srcH = src.rows()
-
-
         val scale = newSize.toFloat() / max(srcW, srcH)
+
+        // new image size (width and height)
         val newW = (srcW * scale).roundToInt()
         val newH = (srcH * scale).roundToInt()
 
-        val resized = Mat()
         Imgproc.resize(src, resized, Size(newW.toDouble(), newH.toDouble()))
 
+        // calculate padding, padded image is always centered
         val padX = (newSize - newW) / 2
         val padY = (newSize - newH) / 2
 
-        val output = Mat()
-
+        // copies resized and apply border/letterboxing
         Core.copyMakeBorder(
             resized,
-            output,
+            outputMap,
             padY,
             newSize - newH - padY,
             padX,
@@ -128,9 +147,8 @@ class ImageAnalyzer(
             Core.BORDER_CONSTANT,
             padValue
         )
-        resized.release()
 
-        return output to LetterboxInfo(scale, padX, padY)
+        return LetterboxInfo(scale, padX, padY)
     }
 
     /**
@@ -185,7 +203,7 @@ class ImageAnalyzer(
     /**
      * Extracts list of [Detection] objects from OrtSession result.
      * Results are in format `[batch, values, detections]` where the values are:
-     * x, y, w, h, class0 confidence, class1 confidence, class2 ...
+     * x, y, w, h, class0 confidence, class1 confidence, class2 confidence...
      *
      * @return List of [Detection] that pass the [confThreshold] confidence score threshold
      */
@@ -201,11 +219,20 @@ class ImageAnalyzer(
         val detections = mutableListOf<Detection>()
 
         for (value in transposedDetections) {
-            val class0Conf = value[4]
-            val class1Conf = value[5]
-            val (classIndex, score) = if (class0Conf > class1Conf) 0 to class0Conf else 1 to class1Conf
+            val classScores = value.sliceArray(4 until value.size)
 
-            if (score < confThreshold)
+            var bestScore = -Float.MAX_VALUE
+            var bestClass = -1
+
+            for (i in classScores.indices) {
+                val score = classScores[i]
+                if (score > bestScore) {
+                    bestScore = score
+                    bestClass = i
+                }
+            }
+
+            if (bestScore < confThreshold)
                 continue
 
             val x = value[0]
@@ -213,7 +240,7 @@ class ImageAnalyzer(
             val w = value[2]
             val h = value[3]
 
-            detections.add(Detection(x, y, w, h, score, classIndex))
+            detections.add(Detection(x, y, w, h, bestClass, bestScore))
         }
 
         return detections
@@ -247,10 +274,21 @@ class ImageAnalyzer(
         val indicesArr = matIndices.toArray()
         val filtered = indicesArr.map { detections[it] }
 
+        // release, not in class variable because sizes might change from detection to detection
         matRects.release()
         matScores.release()
         matIndices.release()
 
         return filtered
+    }
+
+    /**
+     * Clean up variables that are used as "cache" (not actual cache but frequently used where reallocation each frame
+     * does not make sense).
+     */
+    fun destroy() {
+        bitmapMat.release()
+        resized.release()
+        letterBoxMat.release()
     }
 }

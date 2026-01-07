@@ -1,19 +1,14 @@
 package cv.demoapps.bangdemo.fragments
 
-import android.app.Application
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.view.marginRight
-import androidx.core.view.marginTop
 import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
 
@@ -71,7 +66,8 @@ class CardDetailsFragment : Fragment() {
             titleTextView.text = cardDetailsService.items[detectionId]?.name
             descriptionTextView.text = cardDetailsService.items[detectionId]?.description
 
-            val bitmap = assetService.getImage("${cardDetailsService.items[detectionId]?.imagePath}", "card_scans")
+            val bitmap =
+                assetService.getImageBitmap("${cardDetailsService.items[detectionId]?.imagePath}", "card_scans")
             if (bitmap != null) {
                 imageView.setImageBitmap(bitmap)
             }
@@ -86,7 +82,7 @@ class CardDetailsFragment : Fragment() {
                 for (symbol in cardDetailsService.items[detectionId]?.symbols!!) {
                     val imgPath = symbolDetailsService.items[symbol]?.imagePath ?: continue
 
-                    val bitmap = assetService.getImage(imgPath, "")
+                    val bitmap = assetService.getImageBitmap(imgPath, "")
                     val imgView = ImageView(context)
                     imgView.setImageBitmap(bitmap)
                     imgView.setOnClickListener {

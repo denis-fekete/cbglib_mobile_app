@@ -4,16 +4,23 @@ import android.graphics.RectF
 import org.opencv.core.Rect2d
 
 /**
- *
+ * Data class representing bounding boxes or detections, its highest rated class and confidence score for given class.
+ * Values stored are in a model dimension representation, meaning that if [Detection] should be used in Kotlin drawing
+ * algorithms and functions [toRectF] should be called.
  */
 data class Detection(
     val x: Float, // center x coordinate of bounding box
     val y: Float, // center y coordinate of bounding box
-    val width: Float,
-    val height: Float,
-    val score: Float,
-    val classIndex: Int
+    val width: Float, // width of detection
+    val height: Float, // height of detection
+    val classIndex: Int, // class with the highest confidence score for given bounding box (detection)
+    val score: Float // score of highest detection
 ) {
+    /**
+     * Transforms detection into a Kotlin [RectF] object
+     *
+     * @return [RectF] detection as a [RectF] object
+     */
     fun toRectF(): RectF {
         val wHalf = width / 2.0f
         val hHalf = height / 2.0f
@@ -25,6 +32,11 @@ data class Detection(
         )
     }
 
+    /**
+     * Transforms detection into a OpenCV [Rect2d] object
+     *
+     * @return [Rect2d] detection as a [Rect2d] object
+     */
     fun toRect2d(): Rect2d {
         return Rect2d(
             (x - width / 2f).toDouble(),

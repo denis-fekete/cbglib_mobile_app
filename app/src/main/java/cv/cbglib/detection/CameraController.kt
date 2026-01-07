@@ -19,22 +19,39 @@ import cv.demoapps.bangdemo.MyApp
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+/**
+ * Class making camera control abstracted. Creates new thread on which a [ImageAnalyzer] is run.
+ *
+ * @param context Should be a context of a [android.app.Fragment] or [android.app.Activity], in case either of these are
+ * destroyed, new camera controller along with [ExecutorService] will be created.
+ * @param lifecycleOwner Owner of lifecycle, used by CameraX to correctly bind.
+ * @param previewView [androidx.camera.view.PreviewView] that is in layout where this [CameraController] is situated,
+ * this preview shows unedited stream of images from camera (in another word video from camera).
+ * @param overlayView Class used for drawing, it is expected that the class will be subclassed.
+ *
+ * Function [init] must be called, otherwise [cv.cbglib.detection.CameraController] will not work.
+ * Function [destroy] must be called, otherwise a detached thread might cause memory errors.
+ */
 class CameraController(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
     private val previewView: PreviewView,
     private val overlayView: OverlayView,
 ) {
-    private var initCalled: Boolean = false
+    private var cameraControllerInitialized: Boolean = false
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var cameraProvider: ProcessCameraProvider
     private lateinit var preview: Preview
+    private lateinit var imageAnalyzer: ImageAnalyzer
 
     private val assetService =
         (context.applicationContext as MyApp).assetService
 
+    /**
+     * Initializes internal [cameraExecutor] onto new thread, must be cleaned by [destroy] function of this class.
+     */
     fun init() {
-        initCalled = true
+        cameraControllerInitialized = true
 
         // crearte cameraExecutor on new thread, required by CameraX
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -42,17 +59,17 @@ class CameraController(
 
 
     /**
-     * Start camera on
+     * Initializes all camera and image analysis related options.
      * Source [source](https://developer.android.com/media/camera/camerax/analyze#operating_modes)
      */
     suspend fun startCamera() {
-        if (!initCalled) throw IllegalStateException("CameraController.init() was not called")
+        if (!cameraControllerInitialized) throw IllegalStateException("CameraController.init() was not called")
 
         cameraProvider = ProcessCameraProvider.getInstance(context).await()
 
+        imageAnalyzer = ImageAnalyzer(assetService.modelByteArray, overlayView)
 
-        val imageAnalyzer = ImageAnalyzer(assetService.modelByteArray, overlayView)
-
+        // minimal size with ration 16:9, fewer pixels, less accurate but, more performance
         val resolutionSelector = ResolutionSelector.Builder()
             .setResolutionStrategy(
                 ResolutionStrategy(
@@ -68,6 +85,8 @@ class CameraController(
             )
             .build()
 
+        // keep only latest, if image analyzer is not keeping up (calculations take too much time), then keep only the
+        // most recent image instead of buffering them
         val imageAnalysis = ImageAnalysis.Builder()
             .setOutputImageRotationEnabled(true)
             .setResolutionSelector(resolutionSelector)
@@ -90,11 +109,23 @@ class CameraController(
                 preview
             )
         } catch (exc: Exception) {
-
+            AlertDialog.Builder(context)
+                .setTitle("Info")
+                .setMessage("Exception during camera initialization: ${exc.message}")
+                .setPositiveButton("OK", null)
+                .show()
         }
     }
 
+    /**
+     * Destroys [cameraExecutor] that is running on different thread, to prevent memory leaks must be called!
+     */
     fun destroy() {
-        cameraExecutor.shutdown()
+        if (cameraControllerInitialized) {
+            cameraExecutor.shutdown()
+            cameraControllerInitialized = false
+        }
+        
+        imageAnalyzer.destroy()
     }
 }

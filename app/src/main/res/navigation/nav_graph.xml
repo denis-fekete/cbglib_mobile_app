@@ -15,17 +15,6 @@
                 />
     </fragment>
     <fragment
-            android:id = "@+id/navigationPanelFragment"
-            android:name = "cv.demoapps.bangdemo.fragments.NavigationPanelFragment"
-            android:label = "fragment_navigation_panel"
-            tools:layout = "@layout/fragment_navigation_panel"/>
-    <fragment
-            android:id = "@+id/statusLogFragment"
-            android:name = "cv.demoapps.bangdemo.fragments.StatusLogFragment"
-            android:label = "fragment_status_log"
-            tools:layout = "@layout/fragment_status_log">
-    </fragment>
-    <fragment
             android:id = "@+id/settingsFragment"
             android:name = "cv.demoapps.bangdemo.fragments.SettingsFragment"
             android:label = "fragment_settings"
