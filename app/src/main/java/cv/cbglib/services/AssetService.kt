@@ -3,6 +3,7 @@ package cv.cbglib.services
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 
 /**
  * Service to load images and ONNX models from assets folder. Must be initialized in class that subclasses
@@ -17,15 +18,54 @@ import android.graphics.BitmapFactory
  * Where SUBCLASSED_APP is a subclass of an [Application], or more precise [cv.cbglib.CustomApplication]. For more
  * detail see also [cv.cbglib.CustomApplication]
  */
-class AssetService(private val app: Application) {
-    companion object {
-        // const val MODEL_PATH = "models/yolo_v8_aug.onnx"
-        const val MODEL_PATH = "models/b8_w1_ep40_nosynth.onnx"
+class AssetService(
+    private val app: Application,
+    private val pathToModels: String = "models",
+    private val allowedExtensions: List<String> = listOf(".onnx")
+) {
+    private var lastModelFullPath: String? = null
+    private lateinit var modelBytes: ByteArray
+
+    val availableModels: Array<String> by lazy {
+        try {
+            val files = app.assets.list(pathToModels) ?: return@lazy emptyArray<String>()
+
+            if (allowedExtensions.isEmpty()) {
+                return@lazy files
+            }
+
+            var availableModels: ArrayList<String> = arrayListOf()
+            for (file in files) {
+                for (extension in allowedExtensions) {
+                    if (file.endsWith(extension, ignoreCase = true)) {
+                        availableModels.add(file)
+                    }
+                }
+            }
+            return@lazy availableModels.toTypedArray()
+        } catch (e: Exception) {
+            e.message?.let { Log.e("CBGLIB", it) }
+            emptyArray<String>()
+        }
     }
 
-    val modelByteArray: ByteArray by lazy {
-        app.assets.open(MODEL_PATH).readBytes()
+    /**
+     * Gets [ByteArray] of provided model.
+     *
+     * @param modelName Name of model with extension
+     * @param modelPath Root path of directory in which a model is stored under [assets]. Must end with `/`!
+     */
+    fun getModel(modelName: String, modelPath: String = "models/"): ByteArray {
+        val fullPath = "$modelPath$modelName"
+        if (lastModelFullPath == fullPath) {
+            return modelBytes
+        } else {
+            modelBytes = app.assets.open(fullPath).readBytes()
+            lastModelFullPath = fullPath
+            return modelBytes
+        }
     }
+
 
     /**
      * Returns a [Bitmap] of image asset, image path does not have to be full, a recursive search will be applied until

@@ -16,11 +16,12 @@ import androidx.concurrent.futures.await
 import androidx.lifecycle.LifecycleOwner
 import cv.cbglib.commonUI.OverlayView
 import cv.demoapps.bangdemo.MyApp
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * Class making camera control abstracted. Creates new thread on which a [ImageAnalyzer] is run.
+ * Class making camera control abstracted. Creates new thread on which a [BaseImageAnalyzer] is run.
  *
  * @param context Should be a context of a [android.app.Fragment] or [android.app.Activity], in case either of these are
  * destroyed, new camera controller along with [ExecutorService] will be created.
@@ -42,10 +43,14 @@ class CameraController(
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var cameraProvider: ProcessCameraProvider
     private lateinit var preview: Preview
-    private lateinit var imageAnalyzer: ImageAnalyzer
+    private lateinit var imageAnalyzer: BaseImageAnalyzer
 
     private val assetService =
         (context.applicationContext as MyApp).assetService
+
+    private val settingsService by lazy {
+        (context.applicationContext as MyApp).settingsService
+    }
 
     /**
      * Initializes internal [cameraExecutor] onto new thread, must be cleaned by [destroy] function of this class.
@@ -67,7 +72,32 @@ class CameraController(
 
         cameraProvider = ProcessCameraProvider.getInstance(context).await()
 
-        imageAnalyzer = ImageAnalyzer(assetService.modelByteArray, overlayView)
+        var modelByteArray: ByteArray? = null
+        try {
+            modelByteArray = assetService.getModel(settingsService.selectedModel, "models/")
+        } catch (exc: IOException) {
+            if (assetService.availableModels.isNotEmpty()) {
+                AlertDialog.Builder(context)
+                    .setTitle("Error")
+                    .setMessage("Model could not be loaded, trying to load first available. Error message: ${exc.message}")
+                    .setPositiveButton("OK", null)
+                    .show()
+
+                modelByteArray = assetService.getModel(assetService.availableModels.first(), "models/")
+            } else {
+                AlertDialog.Builder(context)
+                    .setTitle("Error")
+                    .setMessage(
+                        "No models found, please check \'assets/models\' directory to contain models with correct extensions." +
+                                " Error message: ${exc.message}"
+                    )
+                    .setPositiveButton("OK", null)
+                    .show()
+                return
+            }
+        }
+
+        imageAnalyzer = ImageAnalyzerONNX(modelByteArray, overlayView)
 
         // minimal size with ration 16:9, fewer pixels, less accurate but, more performance
         val resolutionSelector = ResolutionSelector.Builder()
@@ -125,7 +155,7 @@ class CameraController(
             cameraExecutor.shutdown()
             cameraControllerInitialized = false
         }
-        
+
         imageAnalyzer.destroy()
     }
 }

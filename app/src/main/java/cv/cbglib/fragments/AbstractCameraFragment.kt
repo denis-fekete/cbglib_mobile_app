@@ -2,7 +2,9 @@ package cv.cbglib.fragments
 
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -18,7 +20,7 @@ import kotlinx.coroutines.launch
  * [cameraxView] and [OverlayView] with id name [overlayView]. These IDs must match, or [initViews] must be
  * overridden and IDs corrected (for this look implementation of [initViews] in base class).
  *
- * @param layoutId is and android ID of layout the derived class if bound to (example: `R.layout.fragment_camera`)
+ * @param layoutRes is and android ID of layout the derived class if bound to (example: `R.layout.fragment_camera`)
  */
 abstract class AbstractCameraFragment(layoutRes: Int) : BaseFragment(layoutRes) {
     private lateinit var cameraController: CameraController
