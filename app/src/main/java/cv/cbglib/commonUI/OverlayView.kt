@@ -56,9 +56,9 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
     }
 
     /**
-     * Scales [Detection] to current screen, since image in [cv.cbglib.detection.ImageAnalyzer] might be different size
+     * Scales [Detection] to current screen, since image in [cv.cbglib.detection.BaseImageAnalyzer] might be different size
      * than screen image scaling and cropping is needed. Info about current image format from
-     * [cv.cbglib.detection.ImageAnalyzer] is stored in [letterboxInfo] that is updated alongside new [detections] in
+     * [cv.cbglib.detection.BaseImageAnalyzer] is stored in [letterboxInfo] that is updated alongside new [detections] in
      * [updateBoxes] function that is called by inside image analyzer.
      */
     protected fun scaleDetectionToScreenRect(det: Detection): RectF {
