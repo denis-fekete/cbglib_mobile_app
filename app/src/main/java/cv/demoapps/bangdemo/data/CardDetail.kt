@@ -4,9 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CardDetail(
-    val id: Int,
-    val name: String,
+    val id: String,
+    val title: String,
     val description: String,
-    val symbols: List<Int>,
-    val imagePath: String
+    val links: List<String> = emptyList(),
+    val imagePath: String? = null
 )

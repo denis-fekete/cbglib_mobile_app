@@ -9,22 +9,28 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.navigation.fragment.findNavController
+import cv.cbglib.fragments.BaseFragment
 import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
+import cv.demoapps.bangdemo.data.CardDetail
+import cv.demoapps.bangdemo.views.LinkView
 
-private const val ARG_DETECTION_ID = "detectionId"
+// must match with argument name in nav_graph.xml
+private const val ARG_DETECTION_ID = "id"
 
 /**
  * Fragment to used for Card details display,
  * Use the [CardDetailsFragment.newInstance] factory method to
  * create an instance of this fragment.
  */
-class CardDetailsFragment : Fragment() {
-    private var detectionId: Int? = null
+class CardDetailsFragment : BaseFragment(R.layout.fragment_card_details) {
+    private var linkId: String? = null
     lateinit var titleTextView: TextView
     lateinit var descriptionTextView: TextView
     lateinit var imageView: ImageView
-    lateinit var symbolsLayout: LinearLayout
+    lateinit var linksLayout: LinearLayout
+    lateinit var thisCard: CardDetail
 
     private val assetService by lazy {
         (requireContext().applicationContext as MyApp).assetService
@@ -34,72 +40,66 @@ class CardDetailsFragment : Fragment() {
         (requireContext().applicationContext as MyApp).cardDetailsService
     }
 
-    private val symbolDetailsService by lazy {
-        (requireContext().applicationContext as MyApp).symbolDetailsService
-    }
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            detectionId = it.getInt(ARG_DETECTION_ID)
+            linkId = it.getString(ARG_DETECTION_ID)
         }
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_card_details, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         titleTextView = view.findViewById<TextView>(R.id.titleText)
         descriptionTextView = view.findViewById<TextView>(R.id.descriptionText)
         imageView = view.findViewById<ImageView>(R.id.imageView)
-        symbolsLayout = view.findViewById<LinearLayout>(R.id.symbolsLayout)
+        linksLayout = view.findViewById<LinearLayout>(R.id.linksLayout)
 
-        symbolsLayout.removeAllViews()
+        // remove template view items
+        linksLayout.removeAllViews()
 
-        if (detectionId != null) {
-            titleTextView.text = cardDetailsService.items[detectionId]?.name
-            descriptionTextView.text = cardDetailsService.items[detectionId]?.description
+        if (linkId != null && cardDetailsService.items[linkId] != null) {
+            thisCard = cardDetailsService.items[linkId]!!
+        } else {
+            return
+        }
 
+        titleTextView.text = thisCard.title
+        descriptionTextView.text = thisCard.description
+
+        if (thisCard.imagePath != null) {
             val bitmap =
-                assetService.getImageBitmap("${cardDetailsService.items[detectionId]?.imagePath}", "card_scans")
+                assetService.getImageBitmap("${thisCard.imagePath}", "card_scans")
             if (bitmap != null) {
                 imageView.setImageBitmap(bitmap)
+            } else {
+                imageView.visibility = View.GONE
             }
+        } else {
+            imageView.visibility = View.GONE
+        }
 
-            if (cardDetailsService.items[detectionId]?.symbols != null) {
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
-                )
-                params.setMargins(0, 0, 40, 0)
+        if (thisCard.links.isNotEmpty()) {
+            for (id in thisCard.links) {
+                val linkCard = cardDetailsService.items[id] ?: continue
 
-                for (symbol in cardDetailsService.items[detectionId]?.symbols!!) {
-                    val imgPath = symbolDetailsService.items[symbol]?.imagePath ?: continue
+                var linkView: LinkView
+                val imgPath = linkCard.imagePath
 
+                if (imgPath != null) {
                     val bitmap = assetService.getImageBitmap(imgPath, "")
-                    val imgView = ImageView(context)
-                    imgView.setImageBitmap(bitmap)
-                    imgView.setOnClickListener {
-                        Toast.makeText(
-                            context,
-                            "Clicked on ${symbolDetailsService.items[symbol]?.name}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    imgView.layoutParams = params
-
-                    symbolsLayout.addView(imgView)
-
+                    linkView = LinkView(context, null, bitmap)
+                } else {
+                    linkView = LinkView(context, linkCard.title, null)
                 }
-            }
 
+                linkView.setOnClickListener {
+                    val action =
+                        CardDetailsFragmentDirections.actionCardDetailsFragmentSelf(id)
+
+                    findNavController().navigate(action)
+                }
+
+                linksLayout.addView(linkView)
+            }
         }
     }
 
@@ -108,7 +108,7 @@ class CardDetailsFragment : Fragment() {
          * Factory method to create a new instance of
          * this fragment using the provided parameters.
          *
-         * @param detectionId Detection ID that will be displayed in Fragment
+         * @param linkId Detection ID that will be displayed in Fragment
          * @return A new instance of fragment CardDetailsFragment.
          */
         @JvmStatic

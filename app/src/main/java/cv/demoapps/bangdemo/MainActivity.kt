@@ -34,6 +34,22 @@ class MainActivity : AppCompatActivity() {
 
         PermissionService.checkCameraPermission(this, this)
         PermissionService.checkStoragePermission(this, this)
+
+        val app = application as MyApp
+        if (app.errorMessageCardDetail != null) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("JsonAssetService error")
+                .setMessage(app.errorMessageCardDetail)
+                .setPositiveButton("OK", null)
+                .show()
+        }
+        if (app.errorMessageClass2Link != null) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("JsonAssetService error")
+                .setMessage(app.errorMessageClass2Link)
+                .setPositiveButton("OK", null)
+                .show()
+        }
     }
 
     private fun setupNavigation() {

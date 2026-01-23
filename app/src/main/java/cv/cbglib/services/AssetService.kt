@@ -4,6 +4,8 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
+import java.io.File
+import java.io.IOException
 
 /**
  * Service to load images and ONNX models from assets folder. Must be initialized in class that subclasses

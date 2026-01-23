@@ -20,8 +20,4 @@ abstract class BaseFragment(
     ): View {
         return inflater.inflate(layoutRes, container, false)
     }
-
-    protected fun navigateTo(destinationId: Int) {
-        findNavController().navigate(destinationId)
-    }
 }

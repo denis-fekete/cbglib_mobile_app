@@ -26,7 +26,10 @@
             android:label = "fragment_card_details"
             tools:layout = "@layout/fragment_card_details">
         <argument
-                android:name = "detectionId"
-                app:argType = "integer"/>
+                android:name = "id"
+                app:argType = "string"/>
+        <action
+                android:id = "@+id/action_cardDetailsFragment_self"
+                app:destination = "@id/cardDetailsFragment"/>
     </fragment>
 </navigation>

@@ -20,16 +20,22 @@ class BangOverlayView(context: Context, attrs: AttributeSet?) : OverlayView(cont
     private var bgRect: RectF = RectF()
 
     /**
-     * Service used for looking up details about [cv.cbglib.detection.Detection] objects based on detection
-     * `classIndex`. Usage:
+     * Service used for looking up details about [cv.cbglib.detection.Detection] objects.
      *
-     * `cardDetailsService.items[cv.cbglib.detection.Detection.classIndex]?.name`
-     *
-     * Will return a name of detection based on it classIndex
      * @see [cv.demoapps.bangdemo.data.CardDetail] for other values that can be read
      */
-    private val cardDetailsService =
+    private val cardDetailsService by lazy {
         (context.applicationContext as MyApp).cardDetailsService
+    }
+
+
+    /**
+     * Service used for looking translating `classId` into `linkId` from [cv.demoapps.bangdemo.data.Class2Link] data class.
+     * Since [cardDetailsService] uses `String` as ID it is needed translation.
+     */
+    private val class2linkService by lazy {
+        (context.applicationContext as MyApp).class2linkService
+    }
 
     private val boxPaint = Paint().apply {
         color = ContextCompat.getColor(context, R.color.detection_box)
@@ -73,8 +79,11 @@ class BangOverlayView(context: Context, attrs: AttributeSet?) : OverlayView(cont
 
                 canvas.drawRect(scaledRect, boxPaint)
 
-                // get label from service
-                val label = "${cardDetailsService.items[det.classIndex]?.name}: ${(det.score * 100).toInt()}%"
+                // get label from services
+                val linkId = class2linkService.items[det.classIndex]?.linkId
+                val className = cardDetailsService.items[linkId]?.title
+                val label = "${className}: ${(det.score * 100).toInt()}%"
+
                 // determine text width and height
                 val textWidth = textPaint.measureText(label)
                 val textHeight = textPaint.fontMetrics.run { bottom - top }

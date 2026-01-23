@@ -11,6 +11,9 @@
       <option name="XML_ATTRIBUTE_WRAP" value="2" />
       <option name="XML_SPACE_AROUND_EQUALITY_IN_ATTRIBUTE" value="true" />
     </XML>
+    <codeStyleSettings language="JSON">
+      <option name="RIGHT_MARGIN" value="0" />
+    </codeStyleSettings>
     <codeStyleSettings language="XML">
       <option name="RIGHT_MARGIN" value="80" />
       <option name="WRAP_ON_TYPING" value="0" />

@@ -45,8 +45,9 @@ class CameraController(
     private lateinit var preview: Preview
     private lateinit var imageAnalyzer: BaseImageAnalyzer
 
-    private val assetService =
+    private val assetService by lazy {
         (context.applicationContext as MyApp).assetService
+    }
 
     private val settingsService by lazy {
         (context.applicationContext as MyApp).settingsService
