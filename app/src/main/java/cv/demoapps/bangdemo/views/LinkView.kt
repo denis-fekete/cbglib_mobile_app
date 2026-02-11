@@ -2,17 +2,12 @@ package cv.demoapps.bangdemo.views
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Bundle
 import android.view.Gravity
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.view.marginRight
 import cv.demoapps.bangdemo.R
 
 
@@ -43,7 +38,5 @@ class LinkView(private val context: Context?, private val text: String?, private
 
             textView.text = text ?: "Default"
         }
-
-
     }
 }

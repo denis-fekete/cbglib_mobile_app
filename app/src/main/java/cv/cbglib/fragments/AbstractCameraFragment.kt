@@ -2,13 +2,11 @@ package cv.cbglib.fragments
 
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import cv.cbglib.commonUI.OverlayView
+import cv.cbglib.detection.OverlayView
 import cv.cbglib.detection.CameraController
 import cv.demoapps.bangdemo.R
 import kotlinx.coroutines.launch

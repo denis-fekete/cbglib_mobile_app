@@ -14,7 +14,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.concurrent.futures.await
 import androidx.lifecycle.LifecycleOwner
-import cv.cbglib.commonUI.OverlayView
+import cv.cbglib.detection.OverlayView
 import cv.demoapps.bangdemo.MyApp
 import java.io.IOException
 import java.util.concurrent.ExecutorService

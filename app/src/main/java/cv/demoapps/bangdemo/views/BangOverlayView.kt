@@ -7,7 +7,7 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import android.util.AttributeSet
 import androidx.core.content.ContextCompat
-import cv.cbglib.commonUI.OverlayView
+import cv.cbglib.detection.OverlayView
 import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
 import kotlin.math.max

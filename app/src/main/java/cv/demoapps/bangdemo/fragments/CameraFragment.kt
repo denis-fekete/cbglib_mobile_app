@@ -2,8 +2,6 @@ package cv.demoapps.bangdemo.fragments
 
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
-import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
 import cv.cbglib.fragments.AbstractCameraFragment
 import cv.demoapps.bangdemo.MyApp

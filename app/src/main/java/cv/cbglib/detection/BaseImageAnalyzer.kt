@@ -1,16 +1,15 @@
 package cv.cbglib.detection
 
-import ai.onnxruntime.OnnxTensor
-import ai.onnxruntime.OrtEnvironment
-import ai.onnxruntime.OrtSession
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.RectF
 import android.os.SystemClock
-import android.util.Log
+import android.util.AttributeSet
+import android.view.MotionEvent
+import android.view.View
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
-import cv.cbglib.commonUI.OverlayView
-import org.opencv.android.Utils
+import cv.cbglib.logging.PerformanceLogValue
 import org.opencv.core.Core
-import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.MatOfFloat
 import org.opencv.core.MatOfInt

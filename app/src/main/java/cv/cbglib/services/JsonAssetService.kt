@@ -1,13 +1,9 @@
 package cv.cbglib.services
 
-import android.R
 import android.app.Application
-import android.util.Log
-import androidx.appcompat.app.AlertDialog
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import java.io.IOException
 import java.nio.charset.Charset
 
 /**

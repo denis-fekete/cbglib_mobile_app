@@ -1,4 +1,4 @@
-package cv.cbglib.commonUI
+package cv.cbglib.detection
 
 import android.content.Context
 import android.graphics.Canvas
@@ -6,8 +6,6 @@ import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import cv.cbglib.detection.Detection
-import cv.cbglib.detection.LetterboxInfo
 import kotlin.math.max
 
 /**
@@ -56,9 +54,9 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
     }
 
     /**
-     * Scales [Detection] to current screen, since image in [cv.cbglib.detection.BaseImageAnalyzer] might be different size
+     * Scales [Detection] to current screen, since image in [BaseImageAnalyzer] might be different size
      * than screen image scaling and cropping is needed. Info about current image format from
-     * [cv.cbglib.detection.BaseImageAnalyzer] is stored in [letterboxInfo] that is updated alongside new [detections] in
+     * [BaseImageAnalyzer] is stored in [letterboxInfo] that is updated alongside new [detections] in
      * [updateBoxes] function that is called by inside image analyzer.
      */
     protected fun scaleDetectionToScreenRect(det: Detection): RectF {
