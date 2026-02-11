@@ -5,7 +5,8 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.util.Log
 import androidx.camera.core.ImageProxy
-import cv.cbglib.commonUI.OverlayView
+import cv.cbglib.logging.PerformanceLogOverlay
+import cv.cbglib.logging.PerformanceLogValue
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.CvType
@@ -16,6 +17,7 @@ import java.nio.FloatBuffer
 class ImageAnalyzerONNX(
     modelBytes: ByteArray,
     private val overlayView: OverlayView,
+    private val performanceLogOverlay: PerformanceLogOverlay
 ) : BaseImageAnalyzer() {
     private var ortSession: OrtSession
     private var ortEnvironment: OrtEnvironment = OrtEnvironment.getEnvironment()
@@ -25,7 +27,6 @@ class ImageAnalyzerONNX(
     init {
         // try to use Nnapi for hardware accelerated detection, on fail use CPU
         try {
-
             val sessionOptions = OrtSession.SessionOptions()
             sessionOptions.addNnapi()
             ortSession = ortEnvironment.createSession(modelBytes, sessionOptions)
@@ -55,6 +56,14 @@ class ImageAnalyzerONNX(
             resolutionInitialized = true
         }
 
+        if (true) {
+            timedAnalyze(imageProxy)
+        } else {
+            regularAnalyze(imageProxy)
+        }
+    }
+
+    private fun timedAnalyze(imageProxy: ImageProxy) {
         val (_, timeBitmap) = measureTime {
             Utils.bitmapToMat(
                 imageProxy.toBitmap(),
@@ -84,20 +93,57 @@ class ImageAnalyzerONNX(
         // apply NMS onto results
         val (filteredDetections, timeNMS) = measureTime { applyNMS(detections, 0.6f, 0.5f) }
 
+        val performanceLogList = listOf(
+            PerformanceLogValue("Bitmap", timeBitmap),
+            PerformanceLogValue("LetterBox", timeLetterboxing),
+            PerformanceLogValue("Tensor", timeTensor),
+            PerformanceLogValue("Detection", timeDetection),
+            PerformanceLogValue("Extract detections", timeExtractDetections),
+            PerformanceLogValue("NMS", timeNMS)
+        )
+        Log.d("package:cv.demoapps.bangdemo", performanceLogList.toString())
+        performanceLogOverlay.post {
+            performanceLogOverlay.updateLogData(performanceLogList)
+        }
         // add new [Detection] boxes to draw and invalidate View that is drawing them
         overlayView.post {
             overlayView.updateBoxes(filteredDetections, letterBoxInfo)
         }
 
-        Log.d(
-            "Profiler", "\n" +
-                    "Bitmap: ${timeBitmap / 1_000_000.0}ms\n" +
-                    "LetterBox: ${timeLetterboxing / 1_000_000.0}ms\n" +
-                    "Tensor: ${timeTensor / 1_000_000.0}ms\n" +
-                    "Detection: ${timeDetection / 1_000_000.0}ms\n" +
-                    "Extract detections: ${timeExtractDetections / 1_000_000.0}ms\n" +
-                    "NMS: ${timeNMS / 1_000_000.0}ms\n"
+        results.close()
+        tensor.close()
+    }
+
+    private fun regularAnalyze(imageProxy: ImageProxy) {
+        Utils.bitmapToMat(
+            imageProxy.toBitmap(),
+            bitmapMat
         )
+
+        // close imageProxy so buffers can be reused
+        imageProxy.close()
+
+        // resize image into expected size for model, apply letterboxing if needed
+        val letterBoxInfo = resizeAndLetterBox(bitmapMat, modelInputWidth, letterBoxMat)
+        // create tensor from Mat
+        val tensor = matToTensor(letterBoxMat)
+
+        // run model on tensor, and get result
+        val results = ortSession.run(mapOf(inputName to tensor))
+
+        // convert flat outputs into an 3D array
+        val result3D = results[0].value as Array<Array<FloatArray>> // [batch, values, detections]
+
+        // extract bounding boxes [Detection] objects from results that
+        val detections = extractDetections(result3D, 0.6f)
+
+        // apply NMS onto results
+        val filteredDetections = applyNMS(detections, 0.6f, 0.5f)
+
+        // add new [Detection] boxes to draw and invalidate View that is drawing them
+        overlayView.post {
+            overlayView.updateBoxes(filteredDetections, letterBoxInfo)
+        }
 
         results.close()
         tensor.close()

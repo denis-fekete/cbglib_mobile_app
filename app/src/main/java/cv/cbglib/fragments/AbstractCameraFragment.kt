@@ -8,6 +8,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import cv.cbglib.detection.OverlayView
 import cv.cbglib.detection.CameraController
+import cv.cbglib.logging.PerformanceLogOverlay
 import cv.demoapps.bangdemo.R
 import kotlinx.coroutines.launch
 
@@ -24,6 +25,7 @@ abstract class AbstractCameraFragment(layoutRes: Int) : BaseFragment(layoutRes) 
     private lateinit var cameraController: CameraController
     protected lateinit var cameraxView: PreviewView
     protected lateinit var overlayView: OverlayView
+    protected lateinit var performanceLogOverlay: PerformanceLogOverlay
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -38,7 +40,8 @@ abstract class AbstractCameraFragment(layoutRes: Int) : BaseFragment(layoutRes) 
             requireContext(),
             this as LifecycleOwner,
             cameraxView,
-            overlayView
+            overlayView,
+            performanceLogOverlay
         )
 
         cameraController.init()
@@ -60,6 +63,7 @@ abstract class AbstractCameraFragment(layoutRes: Int) : BaseFragment(layoutRes) 
     protected fun initViews(view: View) {
         cameraxView = view.findViewById<PreviewView>(R.id.cameraxView)
         overlayView = view.findViewById<OverlayView>(R.id.overlayView)
+        performanceLogOverlay = view.findViewById<PerformanceLogOverlay>(R.id.performanceLogOverlay)
     }
 
     override fun onDestroyView() {

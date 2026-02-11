@@ -15,6 +15,7 @@ import androidx.camera.view.PreviewView
 import androidx.concurrent.futures.await
 import androidx.lifecycle.LifecycleOwner
 import cv.cbglib.detection.OverlayView
+import cv.cbglib.logging.PerformanceLogOverlay
 import cv.demoapps.bangdemo.MyApp
 import java.io.IOException
 import java.util.concurrent.ExecutorService
@@ -38,6 +39,7 @@ class CameraController(
     private val lifecycleOwner: LifecycleOwner,
     private val previewView: PreviewView,
     private val overlayView: OverlayView,
+    private val performanceLogOverlay: PerformanceLogOverlay
 ) {
     private var cameraControllerInitialized: Boolean = false
     private lateinit var cameraExecutor: ExecutorService
@@ -98,7 +100,7 @@ class CameraController(
             }
         }
 
-        imageAnalyzer = ImageAnalyzerONNX(modelByteArray, overlayView)
+        imageAnalyzer = ImageAnalyzerONNX(modelByteArray, overlayView, performanceLogOverlay)
 
         // minimal size with ration 16:9, fewer pixels, less accurate but, more performance
         val resolutionSelector = ResolutionSelector.Builder()
