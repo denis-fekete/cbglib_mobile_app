@@ -13,17 +13,22 @@ class SettingsService(
     lateinit var detectionBoxColor: String // TODO: implement behavior
     var textSize: Int = 0 // TODO: implement behavior
     lateinit var selectedModel: String
-    var sPref: SharedPreferences
+    var showPerformance: Boolean = false
+    var verbosePerformance: Boolean = false
+    var framesToSkip: Int = 5
+
+    var sPref: SharedPreferences = app.getSharedPreferences(
+        "settings",
+        Context.MODE_PRIVATE
+    )
 
     init {
-        sPref = app.getSharedPreferences(
-            "settings",
-            Context.MODE_PRIVATE
-        )
-
         load()
     }
 
+    /**
+     * Loads settings from `SharedPreferences`.
+     */
     fun load() {
         selectedModel = sPref.getString("selectedModel", null).toString()
         language = sPref.getString("language", "").toString()
@@ -33,8 +38,16 @@ class SettingsService(
         detectionBoxColor = sPref.getString("detectionBoxColor", "").toString()
 
         textSize = sPref.getInt("detectionBoxTextSize", 0)
+
+        showPerformance = sPref.getBoolean("showPerformance", false)
+        verbosePerformance = sPref.getBoolean("verbosePerformance", true)
+
+        framesToSkip = sPref.getInt("framesToSkip", 0)
     }
 
+    /**
+     * Saves settings to the `SharedPreferences`.
+     */
     fun save() {
         val editor = sPref.edit()
         editor.apply {
@@ -46,6 +59,12 @@ class SettingsService(
             putString("detectionBoxColor", detectionBoxColor)
 
             putInt("detectionBoxTextSize", textSize)
+
+            putBoolean("showPerformance", showPerformance)
+            putBoolean("verbosePerformance", verbosePerformance)
+
+            putInt("framesToSkip", framesToSkip)
+
         }.apply()
     }
 

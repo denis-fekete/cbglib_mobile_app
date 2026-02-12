@@ -8,6 +8,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import cv.cbglib.logging.PerformanceLogValue
 import org.opencv.core.Core
 import org.opencv.core.Mat
@@ -24,12 +25,7 @@ import kotlin.math.roundToInt
 
 abstract class BaseImageAnalyzer(
 ) : ImageAnalysis.Analyzer {
-    /**
-     * Number of frames to skip, not every frame of camera, needs to be checked, 0 means every
-     */
-    protected var framesToSkip = 5
-
-    protected var skippedFramesCounter: Int = Int.MAX_VALUE - framesToSkip - 1
+    protected var skippedFramesCounter: Int = Int.MAX_VALUE // activate at first frame
     protected var resolutionInitialized = false
     protected val modelInputWidth = 640
     //    val modelInputHeight = 640 // not used since model expects 1:1 ratio of images
@@ -40,6 +36,7 @@ abstract class BaseImageAnalyzer(
     protected var letterBoxMat = Mat()
     protected var rgbMat = Mat()
     protected var floatMat = Mat()
+
 
     /**
      * Resized [src] Mat into a size that model can use. If source Mat is not in 1:1 aspect ratio a letterbox is

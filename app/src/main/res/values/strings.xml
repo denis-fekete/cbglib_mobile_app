@@ -37,6 +37,9 @@
     <!-- Settings layout text-->
     <string name = "settings_choose_model">Choose model:</string>
     <string name = "settings_choose_language">Choose language:</string>
+    <string name = "settings_font_size">Font size:</string>
+    <string name = "settings_show_performance">Show performance:</string>
+    <string name = "settings_verbose_performance">Verbose performance:</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name = "hello_blank_fragment">Hello blank fragment</string>
 </resources>

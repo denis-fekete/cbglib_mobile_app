@@ -5,16 +5,18 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
+import android.widget.Switch
+import androidx.appcompat.widget.SwitchCompat
 import cv.cbglib.fragments.BaseFragment
 import cv.cbglib.services.SettingsService
 import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
 
 class SettingsFragment : BaseFragment(R.layout.fragment_settings) {
-    private lateinit var modelSpinner: Spinner
-    private lateinit var languageSpinner: Spinner
-    private var lastSelectedModel: String = ""
-    private var lastSelectedLanguage: String = ""
+
+    private var lastSelectedModel: String = "" // helper variable to skip model change if model didn't change
+
+    private var lastSelectedLanguage: String = "" // helper variable to skip language change if language didn't change
 
     private val settingsService by lazy {
         (requireContext().applicationContext as MyApp).settingsService
@@ -29,10 +31,11 @@ class SettingsFragment : BaseFragment(R.layout.fragment_settings) {
 
         setupModelSpinner(view)
         setupLanguageSpinner(view)
+        setupPerformanceMonitorSwitch(view)
     }
 
     private fun setupLanguageSpinner(view: View) {
-        languageSpinner = view.findViewById<Spinner>(R.id.languageSpinner)
+        val languageSpinner = view.findViewById<Spinner>(R.id.languageSpinner)
 
         val languageAdapter = ArrayAdapter<String>(
             requireContext(),
@@ -65,7 +68,7 @@ class SettingsFragment : BaseFragment(R.layout.fragment_settings) {
     }
 
     private fun setupModelSpinner(view: View) {
-        modelSpinner = view.findViewById<Spinner>(R.id.modelSpinner)
+        val modelSpinner = view.findViewById<Spinner>(R.id.modelSpinner)
 
         val modelAdapter = ArrayAdapter<String>(
             requireContext(),
@@ -95,5 +98,24 @@ class SettingsFragment : BaseFragment(R.layout.fragment_settings) {
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
+    }
+
+    private fun setupPerformanceMonitorSwitch(view: View) {
+        val switchShow = view.findViewById<SwitchCompat>(R.id.showPerformanceSwitch)
+        switchShow.isChecked = settingsService.showPerformance
+
+        switchShow.setOnCheckedChangeListener { _, isChecked ->
+            settingsService.showPerformance = isChecked
+            settingsService.save()
+        }
+
+        val switchVerbose = view.findViewById<SwitchCompat>(R.id.verbosePerformanceSwitch)
+        switchVerbose.isChecked = settingsService.verbosePerformance
+        
+        switchVerbose.setOnCheckedChangeListener { _, isChecked ->
+            settingsService.verbosePerformance = isChecked
+            settingsService.save()
+        }
+
     }
 }

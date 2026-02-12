@@ -16,13 +16,21 @@ import java.nio.FloatBuffer
 
 class ImageAnalyzerONNX(
     modelBytes: ByteArray,
+    private val framesToSkip: Int = 5,
     private val overlayView: OverlayView,
-    private val performanceLogOverlay: PerformanceLogOverlay
+    private val performanceLogOverlay: PerformanceLogOverlay? = null,
+    private val showPerformanceLogging: Boolean,
+    private val verbosePerformanceLogging: Boolean,
 ) : BaseImageAnalyzer() {
     private var ortSession: OrtSession
     private var ortEnvironment: OrtEnvironment = OrtEnvironment.getEnvironment()
     private var inputName: String
 
+    /**
+     * Shared function for analyzing the image, whenever performance logging will be enabled or not depends on
+     * [performanceLogOverlay] and [verbosePerformanceLogging].
+     */
+    private var analyzeFunction: (ImageProxy) -> Unit
 
     init {
         // try to use Nnapi for hardware accelerated detection, on fail use CPU
@@ -37,6 +45,16 @@ class ImageAnalyzerONNX(
         }
 
         inputName = ortSession.inputNames.first()
+
+        analyzeFunction = if (showPerformanceLogging && performanceLogOverlay != null) {
+            if (verbosePerformanceLogging) {
+                ::verboseMetricsAnalyze
+            } else {
+                ::metricsAnalyze
+            }
+        } else {
+            ::noMetricsAnalyze
+        }
     }
 
     /**
@@ -56,14 +74,13 @@ class ImageAnalyzerONNX(
             resolutionInitialized = true
         }
 
-        if (true) {
-            timedAnalyze(imageProxy)
-        } else {
-            regularAnalyze(imageProxy)
-        }
+        analyzeFunction(imageProxy)
     }
 
-    private fun timedAnalyze(imageProxy: ImageProxy) {
+    /**
+     * Analyze function with verbose performance logging
+     */
+    private fun verboseMetricsAnalyze(imageProxy: ImageProxy) {
         val (_, timeBitmap) = measureTime {
             Utils.bitmapToMat(
                 imageProxy.toBitmap(),
@@ -101,8 +118,8 @@ class ImageAnalyzerONNX(
             PerformanceLogValue("Extract detections", timeExtractDetections),
             PerformanceLogValue("NMS", timeNMS)
         )
-        Log.d("package:cv.demoapps.bangdemo", performanceLogList.toString())
-        performanceLogOverlay.post {
+
+        performanceLogOverlay?.post {
             performanceLogOverlay.updateLogData(performanceLogList)
         }
         // add new [Detection] boxes to draw and invalidate View that is drawing them
@@ -114,7 +131,23 @@ class ImageAnalyzerONNX(
         tensor.close()
     }
 
-    private fun regularAnalyze(imageProxy: ImageProxy) {
+    /**
+     * Analyze function with basic (total time) performance logging
+     */
+    private fun metricsAnalyze(imageProxy: ImageProxy) {
+        val (_, totalTime) = measureTime { noMetricsAnalyze(imageProxy) }
+
+        performanceLogOverlay?.post {
+            performanceLogOverlay.updateLogData(
+                listOf(PerformanceLogValue("", totalTime)) // empty key will not be shown
+            )
+        }
+    }
+
+    /**
+     * Analyze function with no performance logging
+     */
+    private fun noMetricsAnalyze(imageProxy: ImageProxy) {
         Utils.bitmapToMat(
             imageProxy.toBitmap(),
             bitmapMat

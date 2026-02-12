@@ -100,7 +100,14 @@ class CameraController(
             }
         }
 
-        imageAnalyzer = ImageAnalyzerONNX(modelByteArray, overlayView, performanceLogOverlay)
+        imageAnalyzer = ImageAnalyzerONNX(
+            modelByteArray,
+            settingsService.framesToSkip,
+            overlayView,
+            performanceLogOverlay,
+            settingsService.showPerformance,
+            settingsService.verbosePerformance
+        )
 
         // minimal size with ration 16:9, fewer pixels, less accurate but, more performance
         val resolutionSelector = ResolutionSelector.Builder()

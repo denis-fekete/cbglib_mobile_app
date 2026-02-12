@@ -32,14 +32,19 @@ class PerformanceLogOverlay(context: Context, attrs: AttributeSet?) : LogOverlay
     }
 
     override fun drawLogs(canvas: Canvas) {
+        if (data.isEmpty()) return
+
         val baseOffset = textPaint.fontMetrics.run { bottom - top }
         var offsetY = 200f;
         var total: Long = 0
         data.forEach {
-            val text = "${it.key}: ${it.value / 1_000_000.0}ms\n"
-            canvas.drawText(text, 0f, offsetY, textPaint)
+            // do not show empty keys (only add to the total value)
+            if (it.key.isNotEmpty()) {
+                val text = "${it.key}: ${it.value / 1_000_000.0}ms\n"
+                canvas.drawText(text, 0f, offsetY, textPaint)
 
-            offsetY += baseOffset
+                offsetY += baseOffset
+            }
             total += it.value
         }
 
