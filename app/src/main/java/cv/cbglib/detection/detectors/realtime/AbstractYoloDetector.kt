@@ -1,7 +1,8 @@
-package cv.cbglib.detection
+package cv.cbglib.detection.detectors.realtime
 
 import android.os.SystemClock
-import androidx.camera.core.ImageAnalysis
+import cv.cbglib.detection.Detection
+import cv.cbglib.detection.ImageDetails
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.MatOfFloat
@@ -12,29 +13,20 @@ import org.opencv.core.Scalar
 import org.opencv.core.Size
 import org.opencv.dnn.Dnn
 import org.opencv.imgproc.Imgproc
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.iterator
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-/**
- * Abstract class derived from [ImageAnalysis.Analyzer], its purpose is to have a common interface for all image
- * analyzers using different models, runtimes, methods. Analyzer analyses all images provided by
- * [androidx.camera.lifecycle.ProcessCameraProvider] in [CameraController]. The analysis process is more detailed in
- * derived classed. Class also contains common functions and variables that are used in analysis process.
- */
-abstract class BaseImageAnalyzer(
-) : ImageAnalysis.Analyzer {
-    protected var skippedFramesCounter: Int = Int.MAX_VALUE // activate at first frame
-    protected var resolutionInitialized = false
-    protected val modelInputWidth = 640
-    //    val modelInputHeight = 640 // not used since model expects 1:1 ratio of images
-
+abstract class AbstractYoloDetector {
     // "cache" variables to prevent initializing new object each new frame
     protected var bitmapMat = Mat()
     protected var resized = Mat()
     protected var letterBoxMat = Mat()
     protected var rgbMat = Mat()
     protected var floatMat = Mat()
-
+    protected lateinit var imageDetails: ImageDetails
 
     /**
      * Resized [src] Mat into a size that model can use. If source Mat is not in 1:1 aspect ratio a letterbox is
@@ -42,17 +34,15 @@ abstract class BaseImageAnalyzer(
      * that will be used for padding.
      * @param src source Mat containing image
      * @param newSize new size of pixels, since 1:1 is expected only one dimension is needed
-     * @param outputMap Output Mat where output of this operation will be stored
      * @param padValue color used for padding
      *
-     * @return LetterboxInfo letterboxed
+     * @return [Mat] containing scaled and letterboxed image
      */
     protected fun resizeAndLetterBox(
         src: Mat,
         newSize: Int,
-        outputMap: Mat,
         padValue: Scalar = Scalar(114.0, 114.0, 114.0),
-    ): LetterboxInfo {
+    ): Mat {
         // find bigger dimension (width / height)
         val srcW = src.cols()
         val srcH = src.rows()
@@ -71,7 +61,7 @@ abstract class BaseImageAnalyzer(
         // copies resized and apply border/letterboxing
         Core.copyMakeBorder(
             resized,
-            outputMap,
+            letterBoxMat,
             padY,
             newSize - newH - padY,
             padX,
@@ -80,7 +70,10 @@ abstract class BaseImageAnalyzer(
             padValue
         )
 
-        return LetterboxInfo(scale, padX, padY)
+        // update image details
+        imageDetails = ImageDetails(scale, padX, padY)
+
+        return letterBoxMat
     }
 
     protected fun transpose(output: Array<FloatArray>): Array<FloatArray> {
@@ -203,7 +196,7 @@ abstract class BaseImageAnalyzer(
      * Clean up variables that are used as "cache" (not actual cache but frequently used where reallocation each frame
      * does not make sense).
      */
-    public fun destroy() {
+    protected fun cleanup() {
         bitmapMat.release()
         resized.release()
         letterBoxMat.release()

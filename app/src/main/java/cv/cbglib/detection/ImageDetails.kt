@@ -10,7 +10,7 @@ package cv.cbglib.detection
  * will have blank spots on left and right). These blank spots are filled with default value. In order to restore this
  * image for drawing detection and detecting clicks or (on touch events) the data must be stored
  */
-data class LetterboxInfo(
+data class ImageDetails(
     // used for scaling camera image into a model image size, used for reverse scaling to properly display detections
     val scale: Float,
     // padding applied to in X axis, meaning camera image width<height and X axis was filled with default value

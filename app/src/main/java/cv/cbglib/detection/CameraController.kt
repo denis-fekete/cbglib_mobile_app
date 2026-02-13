@@ -15,7 +15,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.concurrent.futures.await
 import androidx.lifecycle.LifecycleOwner
-import cv.cbglib.detection.OverlayView
+import cv.cbglib.detection.detectors.realtime.YoloONNXDetector
 import cv.cbglib.logging.PerformanceLogOverlay
 import cv.demoapps.bangdemo.MyApp
 import java.io.IOException
@@ -23,17 +23,16 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * Class making camera control abstracted. Creates new thread on which a [BaseImageAnalyzer] is run.
+ * Class making camera control abstracted. Creates new thread on which a [RealTimeAnalyzer] is run.
  *
  * @param context Should be a context of a [android.app.Fragment] or [android.app.Activity], in case either of these are
  * destroyed, new camera controller along with [ExecutorService] will be created.
  * @param lifecycleOwner Owner of lifecycle, used by CameraX to correctly bind.
- * @param previewView [androidx.camera.view.PreviewView] that is in layout where this [CameraController] is situated,
+ * @param previewView [PreviewView] that is in layout where this [CameraController] is situated,
  * this preview shows unedited stream of images from camera (in another word video from camera).
  * @param overlayView Class used for drawing, it is expected that the class will be subclassed.
  *
- * Function [init] must be called, otherwise [cv.cbglib.detection.CameraController] will not work.
- * Function [destroy] must be called, otherwise a detached thread might cause memory errors.
+ * Function [stop] must be called, otherwise a detached thread might cause memory errors.
  */
 class CameraController(
     private val context: Context,
@@ -46,7 +45,7 @@ class CameraController(
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var cameraProvider: ProcessCameraProvider
     private lateinit var preview: Preview
-    private lateinit var imageAnalyzer: BaseImageAnalyzer
+    private lateinit var realtimeAnalyzer: RealTimeAnalyzer
 
     private val assetService by lazy {
         (context.applicationContext as MyApp).assetService
@@ -57,28 +56,13 @@ class CameraController(
     }
 
     /**
-     * Initializes internal [cameraExecutor] onto new thread, must be cleaned by [destroy] function of this class.
+     * Returns [ByteArray] of model from [cv.cbglib.services.SettingsService]. Models must be stored inside
+     * `assets/models/`.
      */
-    fun init() {
-        cameraControllerInitialized = true
-
-        // crearte cameraExecutor on new thread, required by CameraX
-        cameraExecutor = Executors.newSingleThreadExecutor()
-    }
-
-
-    /**
-     * Initializes all camera and image analysis related options.
-     * Source [source](https://developer.android.com/media/camera/camerax/analyze#operating_modes)
-     */
-    suspend fun startCamera() {
-        if (!cameraControllerInitialized) throw IllegalStateException("CameraController.init() was not called")
-
-        cameraProvider = ProcessCameraProvider.getInstance(context).await()
-
-        var modelByteArray: ByteArray? = null
+    private fun getModelBytes(): ByteArray? {
         try {
-            modelByteArray = assetService.getModel(settingsService.selectedModel, "models/")
+            return assetService.getModel(settingsService.selectedModel, "models/")
+
         } catch (exc: IOException) {
             if (assetService.availableModels.isNotEmpty()) {
                 AlertDialog.Builder(context)
@@ -87,7 +71,7 @@ class CameraController(
                     .setPositiveButton("OK", null)
                     .show()
 
-                modelByteArray = assetService.getModel(assetService.availableModels.first(), "models/")
+                return assetService.getModel(assetService.availableModels.first(), "models/")
             } else {
                 AlertDialog.Builder(context)
                     .setTitle("Error")
@@ -97,21 +81,15 @@ class CameraController(
                     )
                     .setPositiveButton("OK", null)
                     .show()
-                return
+
+                return null
             }
         }
+    }
 
-        imageAnalyzer = ImageAnalyzerONNX(
-            modelByteArray,
-            settingsService.framesToSkip,
-            overlayView,
-            performanceLogOverlay,
-            settingsService.showPerformance,
-            settingsService.verbosePerformance
-        )
-
+    private fun getResolutionSelector(): ResolutionSelector {
         // minimal size with ration 16:9, fewer pixels, less accurate but, more performance
-        val resolutionSelector = ResolutionSelector.Builder()
+        return ResolutionSelector.Builder()
             .setResolutionStrategy(
                 ResolutionStrategy(
                     Size(640, 480),
@@ -125,6 +103,32 @@ class CameraController(
                 )
             )
             .build()
+    }
+
+    /**
+     * Initializes all camera and image analysis related options.
+     * Source [source](https://developer.android.com/media/camera/camerax/analyze#operating_modes)
+     */
+    suspend fun start() {
+        cameraExecutor = Executors.newSingleThreadExecutor()
+        cameraControllerInitialized = true
+
+        cameraProvider = ProcessCameraProvider.getInstance(context).await()
+
+        val modelByteArray = getModelBytes() ?: return
+
+        realtimeAnalyzer = RealTimeAnalyzer(
+            settingsService.framesToSkip,
+            overlayView,
+            performanceLogOverlay,
+            YoloONNXDetector(
+                modelByteArray,
+                settingsService.showPerformance,
+                settingsService.verbosePerformance
+            )
+        )
+
+        val resolutionSelector = getResolutionSelector()
 
         // keep only latest, if image analyzer is not keeping up (calculations take too much time), then keep only the
         // most recent image instead of buffering them
@@ -134,7 +138,7 @@ class CameraController(
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
 
-        imageAnalysis.setAnalyzer(cameraExecutor, imageAnalyzer)
+        imageAnalysis.setAnalyzer(cameraExecutor, realtimeAnalyzer)
 
         preview = Preview.Builder()
             .setResolutionSelector(resolutionSelector)
@@ -161,12 +165,10 @@ class CameraController(
     /**
      * Destroys [cameraExecutor] that is running on different thread, to prevent memory leaks must be called!
      */
-    fun destroy() {
-        if (cameraControllerInitialized) {
+    fun stop() {
+        if (cameraControllerInitialized)
             cameraExecutor.shutdown()
-            cameraControllerInitialized = false
-        }
 
-        imageAnalyzer.destroy()
+        realtimeAnalyzer.destroy()
     }
 }

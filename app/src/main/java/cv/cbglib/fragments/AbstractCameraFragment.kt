@@ -44,11 +44,9 @@ abstract class AbstractCameraFragment(layoutRes: Int) : BaseFragment(layoutRes) 
             performanceLogOverlay
         )
 
-        cameraController.init()
-
         lifecycleScope.launch {
             try {
-                cameraController.startCamera()
+                cameraController.start()
             } catch (e: Exception) {
                 Log.e("CV", "Camera initialization failed: ${e.message}")
             }
@@ -68,6 +66,6 @@ abstract class AbstractCameraFragment(layoutRes: Int) : BaseFragment(layoutRes) 
 
     override fun onDestroyView() {
         super.onDestroyView()
-        cameraController.destroy()
+        cameraController.stop()
     }
 }
