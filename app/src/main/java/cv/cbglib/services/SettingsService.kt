@@ -8,10 +8,7 @@ class SettingsService(
     private val app: Application,
 ) {
     lateinit var language: String // TODO: implement behavior
-    lateinit var detectionBoxTextColor: String // TODO: implement behavior
-    lateinit var detectionBoxTextBackground: String // TODO: implement behavior
-    lateinit var detectionBoxColor: String // TODO: implement behavior
-    var textSize: Int = 0 // TODO: implement behavior
+    var fontSize: Int = 0
     lateinit var selectedModel: String
     var showPerformance: Boolean = false
     var verbosePerformance: Boolean = false
@@ -33,11 +30,7 @@ class SettingsService(
         selectedModel = sPref.getString("selectedModel", null).toString()
         language = sPref.getString("language", "").toString()
 
-        detectionBoxTextBackground = sPref.getString("detectionBoxTextBackground", "").toString()
-        detectionBoxTextColor = sPref.getString("detectionBoxTextColor", "").toString()
-        detectionBoxColor = sPref.getString("detectionBoxColor", "").toString()
-
-        textSize = sPref.getInt("detectionBoxTextSize", 0)
+        fontSize = sPref.getInt("detectionBoxTextSize", 0)
 
         showPerformance = sPref.getBoolean("showPerformance", false)
         verbosePerformance = sPref.getBoolean("verbosePerformance", true)
@@ -54,11 +47,7 @@ class SettingsService(
             putString("selectedModel", selectedModel)
             putString("language", language)
 
-            putString("detectionBoxTextBackground", detectionBoxTextBackground)
-            putString("detectionBoxTextColor", detectionBoxTextColor)
-            putString("detectionBoxColor", detectionBoxColor)
-
-            putInt("detectionBoxTextSize", textSize)
+            putInt("detectionBoxTextSize", fontSize)
 
             putBoolean("showPerformance", showPerformance)
             putBoolean("verbosePerformance", verbosePerformance)
@@ -69,6 +58,6 @@ class SettingsService(
     }
 
     companion object {
-        val languageOptions = listOf("Čestina", "English", "Slovenčina")
+        val languageOptions = arrayOf("Čestina", "English", "Slovenčina")
     }
 }

@@ -38,6 +38,12 @@ class BangOverlayView(context: Context, attrs: AttributeSet?) : OverlayView(cont
         (context.applicationContext as MyApp).class2linkService
     }
 
+    /**
+     * Service used for retrieving a global application settings, mostly used for font size.
+     */
+    private val settingsService by lazy {
+        (context.applicationContext as MyApp).settingsService
+    }
     private val boxPaint = Paint().apply {
         color = ContextCompat.getColor(context, R.color.detection_box)
         style = Paint.Style.STROKE
@@ -54,13 +60,13 @@ class BangOverlayView(context: Context, attrs: AttributeSet?) : OverlayView(cont
 
     private val textPaint = Paint().apply {
         color = ContextCompat.getColor(context, R.color.detection_text)
-        textSize = 32f
+        textSize = unitSpToPix(settingsService.fontSize.toFloat())
         typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
         isAntiAlias = true
     }
     private val errorTextPaint = Paint().apply {
         color = ContextCompat.getColor(context, R.color.detection_text)
-        textSize = 48f
+        textSize = unitSpToPix(settingsService.fontSize.toFloat())
         typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
         isAntiAlias = true
     }

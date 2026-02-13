@@ -1,22 +1,21 @@
 package cv.demoapps.bangdemo.fragments
 
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.NumberPicker
 import android.widget.Spinner
-import android.widget.Switch
+import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
+import cv.cbglib.commonUI.ResizableSpinnerAdapter
 import cv.cbglib.fragments.BaseFragment
 import cv.cbglib.services.SettingsService
 import cv.demoapps.bangdemo.MyApp
 import cv.demoapps.bangdemo.R
 
 class SettingsFragment : BaseFragment(R.layout.fragment_settings) {
-
-    private var lastSelectedModel: String = "" // helper variable to skip model change if model didn't change
-
-    private var lastSelectedLanguage: String = "" // helper variable to skip language change if language didn't change
 
     private val settingsService by lazy {
         (requireContext().applicationContext as MyApp).settingsService
@@ -29,93 +28,130 @@ class SettingsFragment : BaseFragment(R.layout.fragment_settings) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupModelSpinner(view)
-        setupLanguageSpinner(view)
-        setupPerformanceMonitorSwitch(view)
-    }
-
-    private fun setupLanguageSpinner(view: View) {
-        val languageSpinner = view.findViewById<Spinner>(R.id.languageSpinner)
-
-        val languageAdapter = ArrayAdapter<String>(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            SettingsService.languageOptions
-        )
-
-        languageAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        languageSpinner.adapter = languageAdapter
-
-        val languageIndex = SettingsService.languageOptions.indexOf(settingsService.language)
-        if (languageIndex != -1) {
-            languageSpinner.setSelection(languageIndex, false)
-        } else {
-            languageSpinner.setSelection(0)
+        setupSpinnerWithStringValues(
+            R.id.modelSpinner,
+            assetService.availableModels,
+            settingsService.selectedModel
+        ) { selected: String ->
+            settingsService.selectedModel = selected
+            settingsService.save()
         }
 
-        languageSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val current = parent?.getItemAtPosition(position).toString()
-                if (current == lastSelectedModel) return
+        setupSpinnerWithStringValues(
+            R.id.languageSpinner,
+            SettingsService.languageOptions,
+            settingsService.language
+        ) { selected: String ->
+            settingsService.language = selected
+            settingsService.save()
+        }
 
-                lastSelectedLanguage = current
-                settingsService.language = current
-                settingsService.save()
+        setupPerformanceMonitorSwitch()
+
+        setupFontPicker(view)
+    }
+
+
+    /**
+     * Reusable function to setup Android Spinner UI element with String array values.
+     */
+    private fun setupSpinnerWithStringValues(
+        spinnerId: Int,
+        items: Array<String>,
+        selectedItem: String?,
+        onItemChanged: (String) -> Unit
+    ) {
+        val spinner = view?.findViewById<Spinner>(spinnerId)
+
+        val modelAdapter = ResizableSpinnerAdapter(
+            requireContext(),
+            items,
+            TypedValue.COMPLEX_UNIT_SP,
+            settingsService.fontSize.toFloat(),
+        )
+        spinner?.adapter = modelAdapter
+
+        val index = if (selectedItem != null) items.indexOf(selectedItem) else -1
+        spinner?.setSelection(if (index == -1) 0 else index, false)
+
+        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            var lastSelected: String = ""
+
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val current = items[position]
+
+                if (current == lastSelected) return
+
+                lastSelected = current
+                onItemChanged(current)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
     }
 
-    private fun setupModelSpinner(view: View) {
-        val modelSpinner = view.findViewById<Spinner>(R.id.modelSpinner)
+    /**
+     * Setup performance logging and its verbose option switches.
+     */
+    private fun setupPerformanceMonitorSwitch() {
 
-        val modelAdapter = ArrayAdapter<String>(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            assetService.availableModels
-        )
-        modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        modelSpinner.adapter = modelAdapter
+        val switchShow = view?.findViewById<SwitchCompat>(R.id.showPerformanceSwitch)
+        switchShow?.isChecked = settingsService.showPerformance
 
-        val modelIndex = assetService.availableModels.indexOf(settingsService.selectedModel)
-        if (modelIndex != -1) {
-            modelSpinner.setSelection(modelIndex, false)
-        } else {
-            modelSpinner.setSelection(0)
-        }
-
-        modelSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val current = parent?.getItemAtPosition(position).toString()
-
-                if (current == lastSelectedModel) return
-
-                lastSelectedModel = current
-                settingsService.selectedModel = current
-                settingsService.save()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-    }
-
-    private fun setupPerformanceMonitorSwitch(view: View) {
-        val switchShow = view.findViewById<SwitchCompat>(R.id.showPerformanceSwitch)
-        switchShow.isChecked = settingsService.showPerformance
-
-        switchShow.setOnCheckedChangeListener { _, isChecked ->
+        switchShow?.setOnCheckedChangeListener { _, isChecked ->
             settingsService.showPerformance = isChecked
             settingsService.save()
         }
 
-        val switchVerbose = view.findViewById<SwitchCompat>(R.id.verbosePerformanceSwitch)
-        switchVerbose.isChecked = settingsService.verbosePerformance
-        
-        switchVerbose.setOnCheckedChangeListener { _, isChecked ->
+        val switchVerbose = view?.findViewById<SwitchCompat>(R.id.verbosePerformanceSwitch)
+        switchVerbose?.isChecked = settingsService.verbosePerformance
+
+        switchVerbose?.setOnCheckedChangeListener { _, isChecked ->
             settingsService.verbosePerformance = isChecked
             settingsService.save()
         }
+    }
 
+    /**
+     * Setup NumberPicker for font size.
+     */
+    private fun setupFontPicker(view: View) {
+        val picker = view.findViewById<NumberPicker>(R.id.fontSizePicker)
+        picker.minValue = 10
+        picker.maxValue = 30
+        picker.value = settingsService.fontSize
+        updateFontSize()
+
+        picker.setOnValueChangedListener { _, _, newValue ->
+            settingsService.fontSize = newValue
+            settingsService.save()
+            updateFontSize()
+        }
+    }
+
+    private fun updateFontSize() {
+        val textIds = arrayOf(
+            R.id.textFontSize,
+            R.id.textShowPerformance,
+            R.id.textVerbosePerformance,
+            R.id.textChooseLanguage,
+            R.id.textChooseModel,
+        )
+        for (i in textIds) {
+            view?.findViewById<TextView>(i)
+                ?.setTextSize(TypedValue.COMPLEX_UNIT_SP, settingsService.fontSize.toFloat())
+        }
+
+        val spinnerIds = arrayOf(
+            R.id.modelSpinner,
+            R.id.languageSpinner
+        )
+
+        for (i in spinnerIds) {
+            val adapter = view?.findViewById<Spinner>(i)?.adapter
+            if (adapter is ResizableSpinnerAdapter) {
+                adapter.setTextSize(TypedValue.COMPLEX_UNIT_SP, settingsService.fontSize.toFloat())
+            }
+        }
     }
 }

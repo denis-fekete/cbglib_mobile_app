@@ -1,15 +1,7 @@
 package cv.cbglib.detection
 
-import android.content.Context
-import android.graphics.Canvas
-import android.graphics.RectF
 import android.os.SystemClock
-import android.util.AttributeSet
-import android.view.MotionEvent
-import android.view.View
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
-import cv.cbglib.logging.PerformanceLogValue
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.MatOfFloat
@@ -23,6 +15,12 @@ import org.opencv.imgproc.Imgproc
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+/**
+ * Abstract class derived from [ImageAnalysis.Analyzer], its purpose is to have a common interface for all image
+ * analyzers using different models, runtimes, methods. Analyzer analyses all images provided by
+ * [androidx.camera.lifecycle.ProcessCameraProvider] in [CameraController]. The analysis process is more detailed in
+ * derived classed. Class also contains common functions and variables that are used in analysis process.
+ */
 abstract class BaseImageAnalyzer(
 ) : ImageAnalysis.Analyzer {
     protected var skippedFramesCounter: Int = Int.MAX_VALUE // activate at first frame

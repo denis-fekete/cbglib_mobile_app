@@ -11,7 +11,13 @@ import android.widget.TextView
 import cv.demoapps.bangdemo.R
 
 
-class LinkView(private val context: Context?, private val text: String?, private val bitmap: Bitmap?) :
+class LinkView(
+    private val context: Context?,
+    private val text: String?,
+    textUnit: Int,
+    textSize: Float,
+    private val bitmap: Bitmap?
+) :
     LinearLayout(context) {
 
     init {
@@ -37,6 +43,7 @@ class LinkView(private val context: Context?, private val text: String?, private
             imageView.visibility = GONE
 
             textView.text = text ?: "Default"
+            textView.setTextSize(textUnit, textSize)
         }
     }
 }

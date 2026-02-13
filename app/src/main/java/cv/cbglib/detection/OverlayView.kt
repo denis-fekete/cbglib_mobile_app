@@ -105,6 +105,10 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
         return true
     }
 
+    protected fun unitSpToPix(sp: Float): Float {
+        return sp * context.resources.displayMetrics.density
+    }
+
     final override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawDetections(canvas)

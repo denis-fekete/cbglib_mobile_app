@@ -1,6 +1,7 @@
 package cv.demoapps.bangdemo.fragments
 
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -36,6 +37,10 @@ class CardDetailsFragment : BaseFragment(R.layout.fragment_card_details) {
         (requireContext().applicationContext as MyApp).cardDetailsService
     }
 
+    private val settingsService by lazy {
+        (requireContext().applicationContext as MyApp).settingsService
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -60,6 +65,7 @@ class CardDetailsFragment : BaseFragment(R.layout.fragment_card_details) {
 
         titleTextView.text = thisCard.title
         descriptionTextView.text = thisCard.description
+        descriptionTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, settingsService.fontSize.toFloat())
 
         if (thisCard.imagePath != null) {
             val bitmap =
@@ -82,9 +88,21 @@ class CardDetailsFragment : BaseFragment(R.layout.fragment_card_details) {
 
                 if (imgPath != null) {
                     val bitmap = assetService.getImageBitmap(imgPath, "")
-                    linkView = LinkView(context, null, bitmap)
+                    linkView = LinkView(
+                        context,
+                        null,
+                        TypedValue.COMPLEX_UNIT_SP,
+                        settingsService.fontSize.toFloat(),
+                        bitmap
+                    )
                 } else {
-                    linkView = LinkView(context, linkCard.title, null)
+                    linkView = LinkView(
+                        context,
+                        linkCard.title,
+                        TypedValue.COMPLEX_UNIT_SP,
+                        settingsService.fontSize.toFloat(),
+                        null
+                    )
                 }
 
                 linkView.setOnClickListener {
@@ -104,7 +122,7 @@ class CardDetailsFragment : BaseFragment(R.layout.fragment_card_details) {
          * Factory method to create a new instance of
          * this fragment using the provided parameters.
          *
-         * @param linkId Detection ID that will be displayed in Fragment
+         * @param id Detection ID that will be displayed in Fragment
          * @return A new instance of fragment CardDetailsFragment.
          */
         @JvmStatic

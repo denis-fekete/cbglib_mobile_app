@@ -14,6 +14,15 @@ import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
 import java.nio.FloatBuffer
 
+/**
+ * Implementation of abstract [BaseImageAnalyzer] for ONNX runtime environment using YOLO models.
+ *
+ * @param framesToSkip Number of frames that will be skipped == only every `N`th frame will be analyzed.
+ * @param overlayView Derived class from [OverlayView], to which analyzer will store detections.
+ * @param performanceLogOverlay Overlay for displaying performance logs, if null not logs will be displayed.
+ * @param showPerformanceLogging Whenever logging should be displayed.
+ * @param verbosePerformanceLogging Whenever a verbose (more detailed) logs should be displayed.
+ */
 class ImageAnalyzerONNX(
     modelBytes: ByteArray,
     private val framesToSkip: Int = 5,
@@ -91,6 +100,9 @@ class ImageAnalyzerONNX(
         // close imageProxy so buffers can be reused
         imageProxy.close()
 
+        if (bitmapMat.empty())
+            return
+
         // resize image into expected size for model, apply letterboxing if needed
         val (letterBoxInfo, timeLetterboxing) = measureTime {
             resizeAndLetterBox(bitmapMat, modelInputWidth, letterBoxMat)
@@ -155,6 +167,9 @@ class ImageAnalyzerONNX(
 
         // close imageProxy so buffers can be reused
         imageProxy.close()
+
+        if (bitmapMat.empty())
+            return
 
         // resize image into expected size for model, apply letterboxing if needed
         val letterBoxInfo = resizeAndLetterBox(bitmapMat, modelInputWidth, letterBoxMat)

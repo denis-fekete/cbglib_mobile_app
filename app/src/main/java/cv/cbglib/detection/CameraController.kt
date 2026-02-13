@@ -1,6 +1,7 @@
 package cv.cbglib.detection
 
 import android.content.Context
+import android.util.Log
 import android.util.Size
 import androidx.appcompat.app.AlertDialog
 import androidx.camera.core.AspectRatio
