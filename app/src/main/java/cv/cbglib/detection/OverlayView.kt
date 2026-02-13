@@ -17,7 +17,7 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
      * List containing current [Detection] objects that are on screen.
      */
     protected val detections = mutableListOf<Detection>()
-    private var letterboxInfo = LetterboxInfo(1f, 0, 0)
+    private var imageDetails = ImageDetails(1f, 0, 0)
     private var cameraWidth: Int = 0
     private var cameraHeight: Int = 0
     private var scale: Float = 1f
@@ -56,16 +56,16 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
     /**
      * Scales [Detection] to current screen, since image in [BaseImageAnalyzer] might be different size
      * than screen image scaling and cropping is needed. Info about current image format from
-     * [BaseImageAnalyzer] is stored in [letterboxInfo] that is updated alongside new [detections] in
+     * [BaseImageAnalyzer] is stored in [imageDetails] that is updated alongside new [detections] in
      * [updateBoxes] function that is called by inside image analyzer.
      */
     protected fun scaleDetectionToScreenRect(det: Detection): RectF {
         tmpRect = det.toRectF()
 
-        val fixedLeft = (tmpRect.left - letterboxInfo.padX) / letterboxInfo.scale
-        val fixedTop = (tmpRect.top - letterboxInfo.padY) / letterboxInfo.scale
-        val fixedRight = (tmpRect.right - letterboxInfo.padX) / letterboxInfo.scale
-        val fixedBottom = (tmpRect.bottom - letterboxInfo.padY) / letterboxInfo.scale
+        val fixedLeft = (tmpRect.left - imageDetails.padX) / imageDetails.scale
+        val fixedTop = (tmpRect.top - imageDetails.padY) / imageDetails.scale
+        val fixedRight = (tmpRect.right - imageDetails.padX) / imageDetails.scale
+        val fixedBottom = (tmpRect.bottom - imageDetails.padY) / imageDetails.scale
 
         tmpRect.set(
             fixedLeft * scale - cropX,
@@ -87,12 +87,12 @@ abstract class OverlayView(context: Context, attrs: AttributeSet?) : View(contex
      * Cleans internal detection list and adds new boxes into it.
      *
      * @param newBoxes list of <Detection> objects that contain info about found detections in current image
-     * @param letterboxInfo info about current Detections and image, used for scaling of [onTouchEvent] events.
+     * @param imageDetails info about current Detections and image, used for scaling of [onTouchEvent] events.
      */
-    fun updateBoxes(newBoxes: List<Detection>, letterboxInfo: LetterboxInfo) {
+    fun updateBoxes(newBoxes: List<Detection>, imageDetails: ImageDetails) {
         detections.clear()
         detections.addAll(newBoxes)
-        this.letterboxInfo = letterboxInfo
+        this.imageDetails = imageDetails
         invalidate()
     }
 
