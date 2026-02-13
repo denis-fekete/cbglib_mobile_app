@@ -18,16 +18,16 @@ import java.nio.FloatBuffer
 
 class YoloONNXDetector(
     modelBytes: ByteArray,
-    private val showPerformanceLogging: Boolean,
-    private val verbosePerformanceLogging: Boolean,
+    showPerformanceLogging: Boolean,
+    verbosePerformanceLogging: Boolean,
 ) : AbstractYoloDetector(), IDetector {
     private var ortSession: OrtSession
     private var ortEnvironment: OrtEnvironment = OrtEnvironment.getEnvironment()
     private var inputName: String
     private val modelInputWidth = 640
-    //    val modelInputHeight = 640 // not used since model expects 1:1 ratio of images
 
-    private var metricsList = mutableListOf<PerformanceLogValue>()
+    //    val modelInputHeight = 640 // not used since model expects 1:1 ratio of images
+    var analysisFunction: (ImageProxy) -> Pair<List<Detection>, List<PerformanceLogValue>>
 
     init {
         // try to use Nnapi for hardware accelerated detection, on fail use CPU
@@ -42,26 +42,26 @@ class YoloONNXDetector(
         }
 
         inputName = ortSession.inputNames.first()
-    }
 
-    override fun detect(imageProxy: ImageProxy): DetectorResult {
-        metricsList.clear()
-
-        val (detections, totalTime) = measureTime { verboseMetricsAnalysis(imageProxy) }
-
-        metricsList.add(PerformanceLogValue("Total", totalTime))
-
-        return if (showPerformanceLogging) {
-            DetectorResult(detections, imageDetails, metricsList)
+        analysisFunction = if (showPerformanceLogging) {
+            if (verbosePerformanceLogging) {
+                ::verboseMetricsAnalysis
+            } else {
+                ::basicMetricsAnalysis
+            }
         } else {
-            DetectorResult(detections, imageDetails, null)
+            ::noMetricsAnalysis
         }
     }
 
-    /**
-     * Analyze function with verbose performance logging
-     */
-    private fun verboseMetricsAnalysis(imageProxy: ImageProxy): List<Detection> {
+    override fun detect(imageProxy: ImageProxy): DetectorResult {
+        val (detections, metricsList) = verboseMetricsAnalysis(imageProxy)
+
+        return DetectorResult(detections, imageDetails, metricsList)
+    }
+
+
+    private fun verboseMetricsAnalysis(imageProxy: ImageProxy): Pair<List<Detection>, List<PerformanceLogValue>> {
         // convert ImageProxy => Bitmap => OpenCV.Mat
         val (_, timeBitmap) = measureTime {
             Utils.bitmapToMat(
@@ -93,19 +93,61 @@ class YoloONNXDetector(
         // apply NMS onto results
         val (filteredDetections, timeNMS) = measureTime { applyNMS(detections, 0.6f, 0.5f) }
 
-        if (showPerformanceLogging && verbosePerformanceLogging) {
-            metricsList.add(PerformanceLogValue("Bitmap", timeBitmap))
-            metricsList.add(PerformanceLogValue("LetterBox", timeLetterboxing))
-            metricsList.add(PerformanceLogValue("Tensor", timeTensor))
-            metricsList.add(PerformanceLogValue("Detection", timeDetection))
-            metricsList.add(PerformanceLogValue("Extract detections", timeExtractDetections))
-            metricsList.add(PerformanceLogValue("NMS", timeNMS))
-        }
+        results.close()
+        tensor.close()
+
+        return filteredDetections to
+                listOf(
+                    PerformanceLogValue("Bitmap", timeBitmap),
+                    PerformanceLogValue("LetterBox", timeLetterboxing),
+                    PerformanceLogValue("Tensor", timeTensor),
+                    PerformanceLogValue("Detection", timeDetection),
+                    PerformanceLogValue("Extract detections", timeExtractDetections),
+                    PerformanceLogValue("NMS", timeNMS),
+                    PerformanceLogValue(
+                        "Total",
+                        timeBitmap + timeLetterboxing + timeTensor + timeDetection + timeExtractDetections + timeNMS
+                    ),
+                )
+    }
+
+    private fun basicMetricsAnalysis(imageProxy: ImageProxy): Pair<List<Detection>, List<PerformanceLogValue>> {
+        val (results, total) = measureTime { noMetricsAnalysis(imageProxy) }
+        return Pair(results.first, listOf(PerformanceLogValue("", total)))
+    }
+
+    private fun noMetricsAnalysis(imageProxy: ImageProxy): Pair<List<Detection>, List<PerformanceLogValue>> {
+        // convert ImageProxy => Bitmap => OpenCV.Mat
+        Utils.bitmapToMat(
+            imageProxy.toBitmap(),
+            bitmapMat
+        )
+
+        // close imageProxy so buffers can be reused
+        imageProxy.close()
+
+        // resize image into expected size for model, apply letterboxing if needed
+        letterBoxMat = resizeAndLetterBox(bitmapMat, modelInputWidth)
+
+        // create tensor from Mat
+        val tensor = matToTensor(letterBoxMat)
+
+        // run model on tensor, and get result
+        val results = ortSession.run(mapOf(inputName to tensor))
+
+        // convert flat outputs into an 3D array
+        val result3D = results[0].value as Array<Array<FloatArray>> // [batch, values, detections]
+
+        // extract bounding boxes [Detection] objects from results that
+        val detections = extractDetections(result3D, 0.6f)
+
+        // apply NMS onto results
+        val filteredDetections = applyNMS(detections, 0.6f, 0.5f)
 
         results.close()
         tensor.close()
 
-        return filteredDetections
+        return filteredDetections to emptyList()
     }
 
     /**
